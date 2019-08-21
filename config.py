@@ -86,7 +86,7 @@ SHEETS = {
 
 # fields, that must be updated on every sheet update
 # other fields will be left unchanged
-TRACKED_FIELDS = ('Description', 'Project')
+TRACKED_FIELDS = ('Created', 'Description', 'Project')
 
 # columns structure
 COLUMNS = (
@@ -121,7 +121,8 @@ COLUMNS = (
     },
     {
         'name': 'Created',  # 3
-        'align': 'CENTER'
+        'align': 'CENTER',
+        'is_date': True
     },
     {
         'name': 'Description',  # 4
@@ -153,7 +154,8 @@ COLUMNS = (
     },
     {
         'name': 'Opened',  # 11
-        'align': 'CENTER'
+        'align': 'CENTER',
+        'is_date': True
     },
     {
         'name': 'Comment',  # 12

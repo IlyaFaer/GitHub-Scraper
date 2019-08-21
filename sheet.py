@@ -47,7 +47,7 @@ class CachedSheetsIds:
 
 class Spreadsheet:
     """
-    Spreadsheet object for reading and updating document.
+    Object for reading and updating Google Spreadsheet document.
 
     Args:
         id_ (str):
@@ -71,7 +71,6 @@ class Spreadsheet:
 
         self._sheets_ids = CachedSheetsIds(id_)
         self._id = id_
-        self._sheets_ids = CachedSheetsIds(self._id)
 
     def create_title_row(self, sheet_name, cols):
         """
@@ -141,6 +140,7 @@ class Spreadsheet:
         issues_list = builder.build_table()
 
         columns, tracked_issues = self._read_sheet(sheet_name)
+        is_new_table = len(tracked_issues) == 0
         raw_new_table = build_index(issues_list, columns.names[:10])
 
         # merging new and old tables
@@ -176,7 +176,9 @@ class Spreadsheet:
         requests = []
         requests += builder.fill_prs(new_table)
 
-        self._insert_blank_rows(sheet_id, new_table, raw_new_table)
+        if not is_new_table:
+            self._insert_blank_rows(sheet_id, new_table, raw_new_table)
+
         self._insert_into_sheet(sheet_name, new_table, 2)
 
         # formating data
@@ -225,8 +227,7 @@ class Spreadsheet:
         return Columns(cols_list, sheet_id), build_index(table, title_row[:10])
 
     def _insert_into_sheet(self, sheet_name, rows, start_index):
-        """
-        Write new data into specified sheet.
+        """Write new data into specified sheet.
 
         Args:
             sheet_name (str):

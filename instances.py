@@ -24,6 +24,7 @@ class Columns:
             self._gen_align_request(index, col)
             self._gen_one_of_request(index, col)
             self._gen_color_requests(index, col)
+            self._gen_date_type_request(index, col)
 
     @property
     def requests(self):
@@ -56,6 +57,34 @@ class Columns:
             }
         }
         return request
+    
+    def _gen_date_type_request(self, index, col):
+        """
+        Request to set date format for column, that
+        designed to contain dates.
+        """
+        if col.get('is_date'):
+            request = {
+                "repeatCell": {
+                    "range": {
+                        "sheetId": self._sheet_id,
+                        "startRowIndex": 0,
+                        "endRowIndex": 10,
+                        "startColumnIndex": 0,
+                        "endColumnIndex": 1
+                    },
+                    "cell": {
+                        "userEnteredFormat": {
+                            "numberFormat": {
+                                "type": "DATE",
+                                "pattern": "dd mm yyyy"
+                            }
+                        }
+                    },
+                    "fields": "userEnteredFormat.numberFormat"
+                }
+            }
+            self._requests.append(request)
 
     def _gen_align_request(self, index, col):
         """Aligning request for column."""
