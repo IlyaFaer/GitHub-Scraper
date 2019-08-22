@@ -27,28 +27,22 @@ gh_client = Github(login, password)
 class SheetBuilder:
     """Class that builds table of issues/PRs from specified repos."""
     def __init__(self, sheet_name, sheet_id):
-        self._labels = SHEETS[sheet_name]['labels']
+        self._labels = {}
         self._repos = {}
-        self._repo_names = SHEETS[sheet_name]['repo_names']
-        self._repo_names_inverse = dict(
-            (v, k) for k, v in self._repo_names.items()
-        )
+        self._repo_names = {}
+        self._repo_names_inverse = {}
         self._prs_index = {}
         self._internal_prs_index = {}
-        self._sheet_id = sheet_id
+        self._reverse_team = {}
+
         self._sheet_name = sheet_name
-        self._reverse_team = dict(
-            (v, k) for k, v in SHEETS[sheet_name]['team'].items()
-        )
+        self._sheet_id = sheet_id
 
     def build_table(self):
         """Build list of issues from given repositories.
 
         Returns: list of dicts.
         """
-        self._prs_index = {}
-        self._internal_prs_index = {}
-
         rows = []
         for repo_name in self._repo_names.keys():
             repo = self._get_repo(repo_name)
@@ -107,6 +101,26 @@ class SheetBuilder:
                                 color
                             ))
         return requests
+
+    def update_config(self, config):
+        """Update builder's configurations.
+
+        Args:
+            config (dict):
+                Dict with sheet's configurations (see config.py).
+        """
+        self._prs_index = {}
+        self._internal_prs_index = {}
+
+        self._labels = config['labels']
+        self._repo_names = config['repo_names']
+        self._repo_names_inverse = dict(
+            (v, k) for k, v in self._repo_names.items()
+        )
+
+        self._reverse_team = dict(
+            (v, k) for k, v in config['team'].items()
+        )
 
     def _get_repo(self, repo_name):
         """Return repo object by name.

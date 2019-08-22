@@ -6,6 +6,8 @@ Uses the document structure described in config.py file.
 import datetime
 import time
 import traceback
+import importlib
+import config
 from sheet import Spreadsheet
 from const import HOUR_DURATION
 
@@ -18,15 +20,20 @@ spreadsheet = Spreadsheet(spreadsheet_id)
 # updating table every hour
 # if exception raised, print it's message and continue
 while True:
-    from config import SHEETS, COLUMNS
-    for sheet_name in SHEETS.keys():
-        print(str(datetime.datetime.now()
-            ) + ': updating ' + sheet_name)
+    importlib.reload(config)
+    for sheet_name in config.SHEETS.keys():
+        print(str(
+            datetime.datetime.now()
+        ) + ': updating ' + sheet_name)
 
-        spreadsheet.format_sheet(sheet_name, COLUMNS)
+        spreadsheet.format_sheet(
+            sheet_name,
+            config.COLUMNS,
+            config.SHEETS[sheet_name]
+        )
 
         try:
-            spreadsheet.update_sheet(sheet_name)
+            spreadsheet.update_sheet(sheet_name, config.SHEETS[sheet_name])
             print(str(datetime.datetime.now()) + ': updated')
         except Exception:
             traceback.print_exc()

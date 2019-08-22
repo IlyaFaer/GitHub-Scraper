@@ -73,7 +73,7 @@ class Spreadsheet:
         self._sheets_ids = CachedSheetsIds(id_)
         self._id = id_
 
-    def format_sheet(self, sheet_name, cols):
+    def format_sheet(self, sheet_name, cols, config):
         """
         Create title row in specified sheet, format columns
         and add data validation.
@@ -84,11 +84,12 @@ class Spreadsheet:
 
             cols (list):
                 List of dicts, in which columns described.
+
+            config (dict):
+                Dict with sheet's configurations (see config.py).
         """
         # set validation for team from config
-        cols[7]['values'] = list(
-            SHEETS[sheet_name]['team'].keys()
-        )
+        cols[7]['values'] = list(config['team'].keys())
 
         columns = Columns(
             cols, self._sheets_ids.get(sheet_name)
@@ -145,18 +146,21 @@ class Spreadsheet:
                 body={"requests": insert_requests}
             ).execute()
 
-    def update_sheet(self, sheet_name):
+    def update_sheet(self, sheet_name, config):
         """Updating specified sheet with GitHub data.
 
         Args:
-            sheet_name (str):
-                String name of sheet to be updated.
+            sheet_name (str): String name of sheet to be updated.
+
+            config (dict):
+                Dict with sheet's configurations (see config.py).
         """
         closed_issues = []
         sheet_id = self._sheets_ids.get(sheet_name)
 
         # building new table from repositories
         builder = self._get_sheet_builder(sheet_name)
+        builder.update_config(config)
         issues_list = builder.build_table()
 
         columns, tracked_issues = self._read_sheet(sheet_name)
