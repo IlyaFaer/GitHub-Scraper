@@ -3,7 +3,7 @@ Funtions and objects, which uses Google Sheets API to
 build and update review sheets.
 """
 import string
-import github_utils
+import sheet_builder
 import auth
 from utils import gen_color_request, get_num_from_url
 from config import TRACKED_FIELDS, TITLE, SHEETS
@@ -46,8 +46,7 @@ class CachedSheetsIds:
 
 
 class Spreadsheet:
-    """
-    Object for reading and updating Google Spreadsheet document.
+    """Object for reading/updating Google Spreadsheet document.
 
     Args:
         id_ (str):
@@ -55,6 +54,8 @@ class Spreadsheet:
             spreadsheet will be created.
     """
     def __init__(self, id_=None):
+        self._builders = {}
+
         if not id_:
             # creating new spreadsheet with given sheets list
             sheets = []
@@ -72,7 +73,7 @@ class Spreadsheet:
         self._sheets_ids = CachedSheetsIds(id_)
         self._id = id_
 
-    def create_title_row(self, sheet_name, cols):
+    def format_sheet(self, sheet_name, cols):
         """
         Create title row in specified sheet, format columns
         and add data validation.
@@ -95,6 +96,25 @@ class Spreadsheet:
 
         self._insert_into_sheet(sheet_name, [columns.names], 1)
         self._apply_formating_data(columns.requests)
+
+    def _get_sheet_builder(self, sheet_name):
+        """Return builder for specified sheet.
+
+        If builder already created, it'll be returned from
+        inner index. Otherwise, it'll be created.
+
+        Args:
+            sheet_name (str): Name of sheet.
+
+        Returns: SheetBuilder linked with the given sheet.
+        """
+        builder = self._builders.get(sheet_name)
+        if builder is None:
+            sheet_id = self._sheets_ids.get(sheet_name)
+            builder = sheet_builder.SheetBuilder(sheet_name, sheet_id)
+            self._builders[sheet_name] = builder
+
+        return builder
 
     def _insert_blank_rows(self, sheet_id, new_table, new_issues):
         """
@@ -136,7 +156,7 @@ class Spreadsheet:
         sheet_id = self._sheets_ids.get(sheet_name)
 
         # building new table from repositories
-        builder = github_utils.SheetBuilder(sheet_name, sheet_id)
+        builder = self._get_sheet_builder(sheet_name)
         issues_list = builder.build_table()
 
         columns, tracked_issues = self._read_sheet(sheet_name)
@@ -255,8 +275,7 @@ class Spreadsheet:
         ).execute()
 
     def _apply_formating_data(self, requests):
-        """
-        Apply formating data with batch update.
+        """Apply formating data with batch update.
 
         Args:
             requests (list):
