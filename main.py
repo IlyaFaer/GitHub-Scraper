@@ -1,4 +1,4 @@
-"""Scraper's main program.
+"""Tracker's main program.
 
 It updates spreadsheet every hour sheet by sheet.
 Uses the document structure described in config.py file.
@@ -23,7 +23,7 @@ while True:
         print(str(datetime.datetime.now()
             ) + ': updating ' + sheet_name)
 
-        spreadsheet.create_title_row(sheet_name, COLUMNS)
+        spreadsheet.format_sheet(sheet_name, COLUMNS)
 
         try:
             spreadsheet.update_sheet(sheet_name)

@@ -2,8 +2,7 @@
 
 
 class Columns:
-    """
-    Object for column processing and generating requests.
+    """Object for column processing and generating requests.
 
     Args:
         cols (list):
@@ -57,7 +56,7 @@ class Columns:
             }
         }
         return request
-    
+
     def _gen_date_type_request(self, index, col):
         """
         Request to set date format for column, that

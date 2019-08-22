@@ -28,6 +28,7 @@ class SheetBuilder:
     """Class that builds table of issues/PRs from specified repos."""
     def __init__(self, sheet_name, sheet_id):
         self._labels = SHEETS[sheet_name]['labels']
+        self._repos = {}
         self._repo_names = SHEETS[sheet_name]['repo_names']
         self._repo_names_inverse = dict(
             (v, k) for k, v in self._repo_names.items()
@@ -45,9 +46,12 @@ class SheetBuilder:
 
         Returns: list of dicts.
         """
+        self._prs_index = {}
+        self._internal_prs_index = {}
+
         rows = []
         for repo_name in self._repo_names.keys():
-            repo = gh_client.get_repo(repo_name)
+            repo = self._get_repo(repo_name)
             oldest_issue_date = datetime.datetime(2000, 1, 1)
 
             # process open PRs and issues
@@ -103,6 +107,24 @@ class SheetBuilder:
                                 color
                             ))
         return requests
+
+    def _get_repo(self, repo_name):
+        """Return repo object by name.
+
+        If repo object already created, it'll be returned
+        from inner index. Otherwise, it'll be created.
+
+        Args:
+            repo_name (str): Repo's name.
+
+        Returns: github.Repository.Repository object.
+        """
+        repo = self._repos.get(repo_name)
+        if repo is None:
+            repo = gh_client.get_repo(repo_name)
+            self._repos[repo_name] = repo
+
+        return repo
 
     def _add_into_index(self, repo, repo_lts, lpr, result):
         # internal PR
