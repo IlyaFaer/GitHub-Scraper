@@ -1,4 +1,5 @@
-"""Some utils for scraper."""
+"""Some utils for tracker."""
+
 
 def gen_color_request(sheet_id, row, column, color):
     """Request, that changes color of specified cell."""

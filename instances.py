@@ -12,8 +12,8 @@ class Columns:
     """
     def __init__(self, cols, sheet_id):
         self._sheet_id = sheet_id
-        self.names = []  # column names in title row
         self._requests = []  # formating requests for columns
+        self.names = []  # column names in title row
 
         # generating requests from configuration
         for index, col in enumerate(cols):
@@ -68,15 +68,15 @@ class Columns:
                     "range": {
                         "sheetId": self._sheet_id,
                         "startRowIndex": 0,
-                        "endRowIndex": 10,
-                        "startColumnIndex": 0,
-                        "endColumnIndex": 1
+                        "endRowIndex": 1000,
+                        "startColumnIndex": index,
+                        "endColumnIndex": index + 1
                     },
                     "cell": {
                         "userEnteredFormat": {
                             "numberFormat": {
                                 "type": "DATE",
-                                "pattern": "dd mm yyyy"
+                                "pattern": "dd mmm yyyy"
                             }
                         }
                     },

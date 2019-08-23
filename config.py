@@ -86,7 +86,7 @@ SHEETS = {
 
 # fields, that must be updated on every sheet update
 # other fields will be left unchanged
-TRACKED_FIELDS = ('Created', 'Description', 'Project')
+TRACKED_FIELDS = ('Created', 'Description', 'Project', 'Assignee')
 
 # columns structure
 COLUMNS = (

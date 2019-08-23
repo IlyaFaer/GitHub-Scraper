@@ -39,7 +39,7 @@ class SheetBuilder:
         self._sheet_id = sheet_id
 
     def build_table(self):
-        """Build list of issues from given repositories.
+        """Build list of issues/PRs from given repositories.
 
         Returns: list of dicts.
         """

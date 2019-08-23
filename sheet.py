@@ -58,14 +58,10 @@ class Spreadsheet:
 
         if not id_:
             # creating new spreadsheet with given sheets list
-            sheets = []
-            for sheet_name in SHEETS.keys():
-                sheets.append({'properties': {'title': sheet_name}})
-
             spreadsheet = service.spreadsheets().create(
                 body={
                     'properties': {'title': TITLE},
-                    'sheets': sheets
+                    'sheets': _gen_sheets_struct(SHEETS.keys())
                 }
             ).execute()
             id_ = spreadsheet.get('spreadsheetId')
@@ -97,6 +93,75 @@ class Spreadsheet:
 
         self._insert_into_sheet(sheet_name, [columns.names], 1)
         self._apply_formating_data(columns.requests)
+
+    def update_sheet(self, sheet_name, config):
+        """Updating specified sheet with GitHub data.
+
+        Args:
+            sheet_name (str): String name of sheet to be updated.
+
+            config (dict):
+                Dict with sheet's configurations (see config.py).
+        """
+        closed_issues = []
+
+        # building new table from repositories
+        builder = self._get_sheet_builder(sheet_name)
+        builder.update_config(config)
+        issues_list = builder.build_table()
+
+        columns, tracked_issues = self._read_sheet(sheet_name)
+        is_new_table = len(tracked_issues) == 0
+        raw_new_table = build_index(issues_list, columns.names[:10])
+
+        # merging new and old tables
+        for tracked_id in tracked_issues.keys():
+            # reset URLs, if they became just numbers
+            for col in ('Issue', 'Internal PR', 'Public PR'):
+                if tracked_issues[tracked_id][col].isdigit():
+                    tracked_issues[tracked_id][col] = builder.build_url(
+                        tracked_issues[tracked_id][col], tracked_id[1]
+                    )
+
+            # updating tracked columns
+            if tracked_id in raw_new_table:
+                updated_issue = raw_new_table.pop(tracked_id)
+                for col in TRACKED_FIELDS:
+                    if updated_issue[col]:
+                        tracked_issues[tracked_id][col] = updated_issue[col]
+            # if no such issue in new table, than it was closed
+            else:
+                closed_issues.append(tracked_issues[tracked_id])
+                continue
+
+        self._insert_new_issues(tracked_issues, raw_new_table)
+
+        new_table = list(tracked_issues.values())
+        new_table.sort(key=sort_func)
+
+        print('-------------------------------')
+        for index, row in enumerate(new_table):
+            print(index + 1, row)
+            new_table[index] = row.as_list
+        print('-------------------------------')
+
+        sheet_id = self._sheets_ids.get(sheet_name)
+        requests = []
+        requests += builder.fill_prs(new_table)
+
+        if not is_new_table:
+            self._insert_blank_rows(sheet_id, new_table, raw_new_table)
+
+        self._insert_into_sheet(sheet_name, new_table, 2)
+
+        # formating data
+        for closed_issue in closed_issues:
+            num = new_table.index(closed_issue.as_list)
+            requests.append(gen_color_request(
+                sheet_id, num + 1, 1, GREY)
+            )
+
+        self._apply_formating_data(requests)
 
     def _get_sheet_builder(self, sheet_name):
         """Return builder for specified sheet.
@@ -145,74 +210,6 @@ class Spreadsheet:
                 spreadsheetId=self._id,
                 body={"requests": insert_requests}
             ).execute()
-
-    def update_sheet(self, sheet_name, config):
-        """Updating specified sheet with GitHub data.
-
-        Args:
-            sheet_name (str): String name of sheet to be updated.
-
-            config (dict):
-                Dict with sheet's configurations (see config.py).
-        """
-        closed_issues = []
-        sheet_id = self._sheets_ids.get(sheet_name)
-
-        # building new table from repositories
-        builder = self._get_sheet_builder(sheet_name)
-        builder.update_config(config)
-        issues_list = builder.build_table()
-
-        columns, tracked_issues = self._read_sheet(sheet_name)
-        is_new_table = len(tracked_issues) == 0
-        raw_new_table = build_index(issues_list, columns.names[:10])
-
-        # merging new and old tables
-        for tracked_id in tracked_issues.keys():
-            # reset URLs, if they became just numbers
-            for col in ('Issue', 'Internal PR', 'Public PR'):
-                if tracked_issues[tracked_id][col].isdigit():
-                    tracked_issues[tracked_id][col] = builder.build_url(
-                        tracked_issues[tracked_id][col], tracked_id[1]
-                    )
-
-            # updating tracked columns
-            if tracked_id in raw_new_table:
-                updated_issue = raw_new_table.pop(tracked_id)
-                for col in TRACKED_FIELDS:
-                    tracked_issues[tracked_id][col] = updated_issue[col]
-            # if no such issue in new table, than it was closed
-            else:
-                closed_issues.append(tracked_issues[tracked_id])
-                continue
-
-        self._insert_new_issues(tracked_issues, raw_new_table)
-
-        new_table = list(tracked_issues.values())
-        new_table.sort(key=sort_func)
-
-        print('-------------------------------')
-        for index, row in enumerate(new_table):
-            print(index + 1, row)
-            new_table[index] = row.as_list
-        print('-------------------------------')
-
-        requests = []
-        requests += builder.fill_prs(new_table)
-
-        if not is_new_table:
-            self._insert_blank_rows(sheet_id, new_table, raw_new_table)
-
-        self._insert_into_sheet(sheet_name, new_table, 2)
-
-        # formating data
-        for closed_issue in closed_issues:
-            num = new_table.index(closed_issue.as_list)
-            requests.append(gen_color_request(
-                sheet_id, num + 1, 1, GREY)
-            )
-
-        self._apply_formating_data(requests)
 
     def _insert_new_issues(self, tracked_issues, new_table):
         """Insert new issues into existing sheet."""
@@ -265,7 +262,7 @@ class Spreadsheet:
                 Index, from which data inserting must start.
         """
 
-        sym_range = "A{start}:{last_sym}{count}".format(
+        sym_range = "{start}:{last_sym}{count}".format(
             start=str(start_index),
             last_sym=string.ascii_uppercase[len(rows[0]) - 1],
             count=len(rows) + start_index + 1,
@@ -317,3 +314,21 @@ def sort_func(row):
         row (dict): Dict representation of single row.
     """
     return row['Repository'], row['Project'], int(get_num_from_url(row['Issue']))
+
+
+def _gen_sheets_struct(sheets_config):
+    """Build dicts with sheet's preferences.
+
+    Args:
+        sheets_config (dict): Sheets preferences.
+
+    Returns: list of dicts, each of which represents
+        structure for passing into Google Spreadsheet API
+        requests.
+    """
+    sheets = []
+
+    for sheet_name in sheets_config:
+        sheets.append({'properties': {'title': sheet_name}})
+
+    return sheets
