@@ -262,7 +262,7 @@ class Spreadsheet:
                 Index, from which data inserting must start.
         """
 
-        sym_range = "{start}:{last_sym}{count}".format(
+        sym_range = "A{start}:{last_sym}{count}".format(
             start=str(start_index),
             last_sym=string.ascii_uppercase[len(rows[0]) - 1],
             count=len(rows) + start_index + 1,
