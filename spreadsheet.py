@@ -1,6 +1,6 @@
 """
 Funtions and objects, which uses Google Sheets API to
-build and update review sheets.
+build and update issues/PRs tables.
 """
 import string
 import sheet_builder
@@ -24,6 +24,7 @@ class CachedSheetsIds:
         spreadsheet_id (str):
             Id of spreadsheet, which sheets must be cached.
     """
+
     def __init__(self, spreadsheet_id):
         self._sheet_ids = {}
 
@@ -35,7 +36,7 @@ class CachedSheetsIds:
             self._sheet_ids[props['title']] = props['sheetId']
 
     def get(self, sheet_name):
-        """Get sheet numeric id by it's name.
+        """Get sheet's numeric id by it's name.
 
         Args:
             sheet_name (str): Name of sheet.
@@ -46,15 +47,19 @@ class CachedSheetsIds:
 
 
 class Spreadsheet:
-    """Object for reading/updating Google Spreadsheet document.
+    """Object for reading/updating Google spreadsheet.
+
+    Uses 'config' args to update spreasheet's structure
+    and SheetBuilders to fill sheets with issues/PRs data.
 
     Args:
         id_ (str):
             Id of existing spreadsheet. If not given, new
             spreadsheet will be created.
     """
+
     def __init__(self, id_=None):
-        self._builders = {}
+        self._builders = {}  # list of builders for every sheet
 
         if not id_:
             # creating new spreadsheet with given sheets list
@@ -72,19 +77,19 @@ class Spreadsheet:
     def format_sheet(self, sheet_name, cols, config):
         """
         Create title row in specified sheet, format columns
-        and add data validation.
+        and add data validation according to 'config' arg.
 
         Args:
             sheet_name (str):
-                Name of sheet in which columns must be created.
+                Name of sheet which must be formatted.
 
             cols (list):
                 List of dicts, in which columns described.
 
             config (dict):
-                Dict with sheet's configurations (see config.py).
+                Dict with sheet's configurations.
         """
-        # set validation for team from config
+        # set validation for team members
         cols[7]['values'] = list(config['team'].keys())
 
         columns = Columns(
@@ -95,21 +100,22 @@ class Spreadsheet:
         self._apply_formating_data(columns.requests)
 
     def update_sheet(self, sheet_name, config):
-        """Updating specified sheet with GitHub data.
+        """Updating specified sheet with issues/PRs data.
 
         Args:
-            sheet_name (str): String name of sheet to be updated.
+            sheet_name (str): Name of sheet to be updated.
 
             config (dict):
-                Dict with sheet's configurations (see config.py).
+                Sheet's preferences.
         """
         closed_issues = []
 
-        # building new table from repositories
+        # build new table from repositories
         builder = self._get_sheet_builder(sheet_name)
         builder.update_config(config)
         issues_list = builder.build_table()
 
+        # read existing data from sheet
         columns, tracked_issues = self._read_sheet(sheet_name)
         is_new_table = len(tracked_issues) == 0
         raw_new_table = build_index(issues_list, columns.names[:10])
@@ -170,7 +176,9 @@ class Spreadsheet:
         inner index. Otherwise, it'll be created.
 
         Args:
-            sheet_name (str): Name of sheet.
+            sheet_name (str):
+                Name of sheet, for which builder
+                must be returned/created.
 
         Returns: SheetBuilder linked with the given sheet.
         """

@@ -1,14 +1,16 @@
 """Tracker's main program.
 
-It updates spreadsheet every hour sheet by sheet.
-Uses the document structure described in config.py file.
+It creates Google spreadsheet according to a structure
+described in config.py file, and then updates it every
+hour. Before every update tracker reloads structure
+from config.py to get new preferences.
 """
 import datetime
 import time
 import traceback
 import importlib
 import config
-from sheet import Spreadsheet
+from spreadsheet import Spreadsheet
 from const import HOUR_DURATION
 
 
@@ -21,6 +23,7 @@ spreadsheet = Spreadsheet(spreadsheet_id)
 # if exception raised, print it's message and continue
 while True:
     importlib.reload(config)
+
     for sheet_name in config.SHEETS.keys():
         print(str(
             datetime.datetime.now()
