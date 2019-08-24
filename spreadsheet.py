@@ -100,13 +100,11 @@ class Spreadsheet:
         self._apply_formating_data(columns.requests)
 
     def update_sheet(self, sheet_name, config):
-        """Updating specified sheet with issues/PRs data.
+        """Update specified sheet with issues/PRs data.
 
         Args:
             sheet_name (str): Name of sheet to be updated.
-
-            config (dict):
-                Sheet's preferences.
+            config (dict): Sheet's preferences.
         """
         closed_issues = []
 
@@ -194,13 +192,23 @@ class Spreadsheet:
         """
         Inserting blank rows to new issue's position,
         to make correct shift of untracked fields.
+
+        Args:
+            sheet_id (int): Numeric sheet id.
+
+            new_table (list):
+                Lists, each of which represents single row.
+
+            new_issues (dict): Index of new issues
         """
         insert_requests = []
         indexes = []
 
+        # get all new rows indexes
         for id_ in new_issues:
             indexes.append(new_table.index(new_issues[id_].as_list) + 1)
 
+        # generate insert requests
         for index in sorted(indexes, reverse=True):
             insert_requests.append({
                 "insertRange": {
@@ -219,14 +227,24 @@ class Spreadsheet:
                 body={"requests": insert_requests}
             ).execute()
 
-    def _insert_new_issues(self, tracked_issues, new_table):
-        """Insert new issues into existing sheet."""
-        for new_id in new_table.keys():
-            tracked_issues[new_id] = new_table[new_id]
+    def _insert_new_issues(self, tracked_issues, new_issues):
+        """Insert new issues into index of tracked issues.
+
+        Args:
+            tracked_issues (dict): Index of tracked issues.
+            new_issues (dict): Index with only recently created issues.
+        """
+        for new_id in new_issues.keys():
+            tracked_issues[new_id] = new_issues[new_id]
             tracked_issues[new_id]['Priority'] = 'New'
 
     def _convert_to_rows(self, title_row, table):
-        """Convert every list into Row."""
+        """Convert every list into Row.
+
+        Args:
+            title_row (list): Tracked columns.
+            table (list): Lists, eah of which represents single row.
+        """
         for index, row in enumerate(table):
             new_row = Row(title_row)
             new_row.fill_from_list(row)
@@ -240,7 +258,7 @@ class Spreadsheet:
         Args:
             sheet_name (str): Name of sheet to be read.
 
-        Returns: Columns and issues index
+        Returns: Columns and issues index.
         """
         table = service.spreadsheets().values().get(
             spreadsheetId=self._id, range=sheet_name
@@ -304,6 +322,11 @@ def build_index(table, column_names):
     {
         (issue_number, repo_name): Row
     }
+
+    Args:
+        column_names (list): List of tracked columns names.
+
+    Returns: Dict, which values represents rows.
     """
     index = {}
     for row in table:
@@ -314,9 +337,7 @@ def build_index(table, column_names):
 
 
 def sort_func(row):
-    """
-    Function that sorts data in table by
-    repo shortname, project name and issue number.
+    """Function that sorts data in table.
 
     Args:
         row (dict): Dict representation of single row.

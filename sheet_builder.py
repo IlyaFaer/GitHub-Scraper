@@ -1,6 +1,6 @@
 """
-Utils for reading data from GitHub and building sheets
-with this data.
+Utils for reading data from GitHub and building
+them into structures.
 """
 from github import Github
 from config import SHEETS
@@ -10,6 +10,8 @@ import re
 import datetime
 
 
+# patterns, which are used for designation connections
+# between issues and PRs
 PATTERNS = (
     re.compile('Fixes[\:]? #[\d*]+'),
     re.compile('Closes[\:]? #[\d*]+'),
@@ -18,6 +20,7 @@ PATTERNS = (
 )
 
 
+# authenticate in GitHub
 with open('loginpas.txt') as login_file:
     login, password = login_file.read().split('/')
 
@@ -41,7 +44,8 @@ class SheetBuilder:
     def build_table(self):
         """Build list of issues/PRs from given repositories.
 
-        Returns: list of dicts.
+        Returns: list of dicts, each of which represents
+            single row.
         """
         rows = []
         for repo_name in self._repo_names.keys():
@@ -63,7 +67,14 @@ class SheetBuilder:
         return rows
 
     def build_url(self, num, repo_lts):
-        """Build URL from issue number and repo name."""
+        """Build issue's URL.
+
+        Args:
+            num (int): Issue's number.
+            repo_lts (str): Repo's short name.
+
+        Returns: issue's link (str).
+        """
         repo = self._repo_names_inverse[repo_lts]
         url = '=HYPERLINK("https://github.com/{repo}/issues/{num}";"{num}")'.format(
             repo=repo, num=num
@@ -71,7 +82,15 @@ class SheetBuilder:
         return url
 
     def fill_prs(self, table):
-        """Try autodetect PRs, using PRs indexes."""
+        """Try autodetect connections between PRs and issues.
+
+        Uses previously built PR indexes.
+
+        Args:
+            table (list): Lists, each of which represents single row.
+
+        Returns: list of requests with coloring data.
+        """
         requests = []
 
         for index, issue in enumerate(table):
@@ -107,7 +126,7 @@ class SheetBuilder:
 
         Args:
             config (dict):
-                Dict with sheet's configurations (see config.py).
+                Dict with sheet's configurations.
         """
         self._prs_index = {}
         self._internal_prs_index = {}
@@ -129,7 +148,7 @@ class SheetBuilder:
         from inner index. Otherwise, it'll be created.
 
         Args:
-            repo_name (str): Repo's name.
+            repo_name (str): Repo name.
 
         Returns: github.Repository.Repository object.
         """
@@ -140,20 +159,44 @@ class SheetBuilder:
 
         return repo
 
-    def _add_into_index(self, repo, repo_lts, lpr, result):
+    def _add_into_index(self, repo, repo_lts, lpr, key_exp):
+        """Add PR into inner index for future use.
+
+        Args:
+            repo (github.Repository.Repository):
+                Repository object.
+
+            repo_lts (str): Short repo name.
+
+            lpr (github.PullRequest.PullRequest):
+                Pull request object.
+
+            key_exp (str): Key expression, that contains
+                linked issue number.
+        """
         # internal PR
         if repo.full_name.startswith('q-logic/'):
             self._internal_prs_index[
-                result.split()[1], repo_lts
+                key_exp.split()[1], repo_lts
             ] = lpr
         # public PR
         else:
             self._prs_index[
-                result.split('#')[1], repo_lts
+                key_exp.split('#')[1], repo_lts
             ] = lpr
 
     def _index_closed_prs(self, repo, since_date):
-        """Add to index closed pull requests."""
+        """Add to PRs index closed pull requests.
+
+        Args:
+            repo (github.Repository.Repository):
+                Repository object.
+
+            since_data (datetime.datetime):
+                Date of the oldest tracked issue. PRs
+                which was created before this date, are
+                meaningless.
+        """
         pulls = repo.get_pulls(
             state='closed', sort='created', direction='desc'
         )
@@ -219,8 +262,7 @@ class SheetBuilder:
         return ', '.join(issue_labels)
 
     def _try_match_keywords(self, body):
-        """
-        Try to find keywords in issue's body.
+        """Try to find keywords in issue's body.
 
         Args:
             body (str): Issue's body.
@@ -234,7 +276,12 @@ class SheetBuilder:
                     return result[0]
 
     def _designate_status_color(self, pull):
-        """Check PR's status and return corresponding color."""
+        """Check PR's status and return corresponding color.
+
+        Args:
+            pull (github.PullRequest.PullRequest):
+                Pull request object.
+        """
         status = None
 
         if pull.merged:

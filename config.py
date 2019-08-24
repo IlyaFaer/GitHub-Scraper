@@ -1,6 +1,7 @@
 """
 File that describes spreadsheet's architecture, including
-columns style, data validation, tracked repositories, etc.
+columns style, data validation, tracked repositories,
+tracked fields, etc..
 """
 from const import GREY, GREEN, BLUE, PINK, \
     RED_KRAYOLA, GREEN_GOOD, WHITE, YELLOW
