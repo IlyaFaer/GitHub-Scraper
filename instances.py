@@ -1,4 +1,5 @@
 """Instances, that helps to process columns and rows."""
+import string
 
 
 class Columns:
@@ -33,6 +34,16 @@ class Columns:
         """
         self._requests.insert(0, self._title_row_request)
         return self._requests
+
+    def column_symbol(self, column):
+        """Return columns letter.
+
+        Args:
+            column (str): Name of column.
+
+        Returns: Letter coordinate of column (str).
+        """
+        return string.ascii_uppercase[self.names.index(column)]
 
     @property
     def _title_row_request(self):

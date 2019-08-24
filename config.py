@@ -7,7 +7,7 @@ from const import GREY, GREEN, BLUE, PINK, \
     RED_KRAYOLA, GREEN_GOOD, WHITE, YELLOW
 
 
-TITLE = 'QLogic Internal Review 3'  # spreadsheet title
+TITLE = 'QLogic Internal Review'  # spreadsheet title
 
 # sheets structure
 SHEETS = {

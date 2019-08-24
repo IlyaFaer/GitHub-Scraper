@@ -3,6 +3,7 @@ Funtions and objects, which uses Google Sheets API to
 build and update issues/PRs tables.
 """
 import string
+import re
 import sheet_builder
 import auth
 from utils import gen_color_request, get_num_from_url
@@ -11,6 +12,7 @@ from instances import Columns, Row
 from const import GREY
 
 
+DIGITS_PATTERN = re.compile(r'[\d*]+')
 service = auth.authenticate()
 
 
@@ -92,12 +94,12 @@ class Spreadsheet:
         # set validation for team members
         cols[7]['values'] = list(config['team'].keys())
 
-        columns = Columns(
+        self._columns = Columns(
             cols, self._sheets_ids.get(sheet_name)
         )
 
-        self._insert_into_sheet(sheet_name, [columns.names], 1)
-        self._apply_formating_data(columns.requests)
+        self._insert_into_sheet(sheet_name, [self._columns.names], 'A1')
+        self._apply_formating_data(self._columns.requests)
 
     def update_sheet(self, sheet_name, config):
         """Update specified sheet with issues/PRs data.
@@ -114,9 +116,9 @@ class Spreadsheet:
         issues_list = builder.build_table()
 
         # read existing data from sheet
-        columns, tracked_issues = self._read_sheet(sheet_name)
+        tracked_issues = self._read_sheet(sheet_name)
         is_new_table = len(tracked_issues) == 0
-        raw_new_table = build_index(issues_list, columns.names[:10])
+        raw_new_table = build_index(issues_list, self._columns.names[:10])
 
         # merging new and old tables
         for tracked_id in tracked_issues.keys():
@@ -156,7 +158,7 @@ class Spreadsheet:
         if not is_new_table:
             self._insert_blank_rows(sheet_id, new_table, raw_new_table)
 
-        self._insert_into_sheet(sheet_name, new_table, 2)
+        self._insert_into_sheet(sheet_name, new_table, 'A2')
 
         # formating data
         for closed_issue in closed_issues:
@@ -258,7 +260,7 @@ class Spreadsheet:
         Args:
             sheet_name (str): Name of sheet to be read.
 
-        Returns: Columns and issues index.
+        Returns: Issues index (dict).
         """
         table = service.spreadsheets().values().get(
             spreadsheetId=self._id, range=sheet_name
@@ -271,9 +273,10 @@ class Spreadsheet:
         self._convert_to_rows(title_row[:10], table)
 
         sheet_id = self._sheets_ids.get(sheet_name)
-        return Columns(cols_list, sheet_id), build_index(table, title_row[:10])
+        self._columns = Columns(cols_list, sheet_id)
+        return build_index(table, title_row[:10])
 
-    def _insert_into_sheet(self, sheet_name, rows, start_index):
+    def _insert_into_sheet(self, sheet_name, rows, start_from):
         """Write new data into specified sheet.
 
         Args:
@@ -281,12 +284,15 @@ class Spreadsheet:
                 Name of sheet that must be updated.
 
             rows (list):
-                List of lists, each of which represents
-                single row in a sheet.
+                Lists, each of which represents single
+                row in a sheet.
 
-            start_index (int):
-                Index, from which data inserting must start.
+            start_from (int):
+                Symbolic index, from which data inserting
+                must start.
         """
+
+        start_index = int(DIGITS_PATTERN.findall(start_from)[0])
 
         sym_range = "A{start}:{last_sym}{count}".format(
             start=str(start_index),
