@@ -73,7 +73,7 @@ class Columns:
         Request to set date format for column, that
         designed to contain dates.
         """
-        if col.get('is_date'):
+        if col.get('type') == 'date':
             request = {
                 "repeatCell": {
                     "range": {

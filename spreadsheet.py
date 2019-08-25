@@ -101,18 +101,21 @@ class Spreadsheet:
         self._insert_into_sheet(sheet_name, [self._columns.names], 'A1')
         self._apply_formating_data(self._columns.requests)
 
-    def update_sheet(self, sheet_name, config):
+    def update_sheet(self, sheet_name, columns_config, sheets_config):
         """Update specified sheet with issues/PRs data.
 
         Args:
             sheet_name (str): Name of sheet to be updated.
-            config (dict): Sheet's preferences.
+
+            columns_config (dict): Columns preferences.
+
+            sheets_config (dict): Sheet's preferences.
         """
         closed_issues = []
 
         # build new table from repositories
         builder = self._get_sheet_builder(sheet_name)
-        builder.update_config(config)
+        builder.update_config(sheets_config)
         issues_list = builder.build_table()
 
         # read existing data from sheet
@@ -120,11 +123,13 @@ class Spreadsheet:
         is_new_table = len(tracked_issues) == 0
         raw_new_table = build_index(issues_list, self._columns.names[:10])
 
+        link_fields = [col['name'] for col in columns_config if col.get('type') == 'link']
+
         # merging new and old tables
         for tracked_id in tracked_issues.keys():
             # reset URLs, if they became just numbers
-            for col in ('Issue', 'Internal PR', 'Public PR'):
-                if tracked_issues[tracked_id][col].isdigit():
+            for col in tracked_issues[tracked_id].keys():
+                if col in link_fields and tracked_issues[tracked_id][col].isdigit():
                     tracked_issues[tracked_id][col] = builder.build_url(
                         tracked_issues[tracked_id][col], tracked_id[1]
                     )
@@ -287,15 +292,15 @@ class Spreadsheet:
                 Lists, each of which represents single
                 row in a sheet.
 
-            start_from (int):
+            start_from (str):
                 Symbolic index, from which data inserting
                 must start.
         """
 
         start_index = int(DIGITS_PATTERN.findall(start_from)[0])
 
-        sym_range = "A{start}:{last_sym}{count}".format(
-            start=str(start_index),
+        sym_range = "{start_from}:{last_sym}{count}".format(
+            start_from=start_from,
             last_sym=string.ascii_uppercase[len(rows[0]) - 1],
             count=len(rows) + start_index + 1,
         )

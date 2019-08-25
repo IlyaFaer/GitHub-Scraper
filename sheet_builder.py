@@ -37,6 +37,7 @@ class SheetBuilder:
         self._prs_index = {}
         self._internal_prs_index = {}
         self._reverse_team = {}
+        self._oldest_issue_dates = {}
 
         self._sheet_name = sheet_name
         self._sheet_id = sheet_id
@@ -50,19 +51,17 @@ class SheetBuilder:
         rows = []
         for repo_name in self._repo_names.keys():
             repo = self._get_repo(repo_name)
-            oldest_issue_date = datetime.datetime(2000, 1, 1)
+            self._oldest_issue_dates[repo_name] = datetime.datetime(2000, 1, 1)
 
             # process open PRs and issues
             for issue in repo.get_issues():
-                oldest_issue_date = min(
-                    issue.created_at, oldest_issue_date
+                self._oldest_issue_dates[repo_name] = min(
+                    issue.created_at, self._oldest_issue_dates[repo_name]
                 )
 
                 row = self._build_issue_dict(issue, repo)
                 if row:
                     rows.append(row)
-
-            self._index_closed_prs(repo, oldest_issue_date)
 
         return rows
 
@@ -92,6 +91,12 @@ class SheetBuilder:
         Returns: list of requests with coloring data.
         """
         requests = []
+
+        for repo_name in self._repo_names.keys():
+            self._index_closed_prs(
+                self._get_repo(repo_name),
+                self._oldest_issue_dates[repo_name]
+            )
 
         for index, issue in enumerate(table):
             num = get_num_from_url(issue[1])
@@ -125,11 +130,11 @@ class SheetBuilder:
         """Update builder's configurations.
 
         Args:
-            config (dict):
-                Dict with sheet's configurations.
+            config (dict): Dict with sheet's configurations.
         """
         self._prs_index = {}
         self._internal_prs_index = {}
+        self._oldest_issue_dates = {}
 
         self._labels = config['labels']
         self._repo_names = config['repo_names']

@@ -36,7 +36,11 @@ while True:
         )
 
         try:
-            spreadsheet.update_sheet(sheet_name, config.SHEETS[sheet_name])
+            spreadsheet.update_sheet(
+                sheet_name,
+                config.COLUMNS,
+                config.SHEETS[sheet_name]
+            )
             print(str(datetime.datetime.now()) + ': updated')
         except Exception:
             traceback.print_exc()
