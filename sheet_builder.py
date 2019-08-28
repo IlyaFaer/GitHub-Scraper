@@ -13,22 +13,23 @@ import datetime
 # patterns, which are used for designation connections
 # between issues and PRs
 PATTERNS = (
-    re.compile('Fixes[\:]? #[\d*]+'),
-    re.compile('Closes[\:]? #[\d*]+'),
-    re.compile('Towards[\:]? #[\d*]+'),
-    re.compile('IPR[\:]? [\d*]+'),
+    re.compile("Fixes[\:]? #[\d*]+"),
+    re.compile("Closes[\:]? #[\d*]+"),
+    re.compile("Towards[\:]? #[\d*]+"),
+    re.compile("IPR[\:]? [\d*]+"),
 )
 
 
 # authenticate in GitHub
-with open('loginpas.txt') as login_file:
-    login, password = login_file.read().split('/')
+with open("loginpas.txt") as login_file:
+    login, password = login_file.read().split("/")
 
 gh_client = Github(login, password)
 
 
 class SheetBuilder:
     """Class that builds table of issues/PRs from specified repos."""
+
     def __init__(self, sheet_name, sheet_id):
         self._labels = {}
         self._repos = {}
@@ -80,7 +81,7 @@ class SheetBuilder:
         )
         return url
 
-    def fill_prs(self, table):
+    def fill_prs(self, table, closed_issues):
         """Try autodetect connections between PRs and issues.
 
         Uses previously built PR indexes.
@@ -88,42 +89,46 @@ class SheetBuilder:
         Args:
             table (list): Lists, each of which represents single row.
 
+            closed_issues (list): Closed issues still must be updated
+                to make easier match between new and old tables.
+
         Returns: list of requests with coloring data.
         """
         requests = []
 
         for repo_name in self._repo_names.keys():
             self._index_closed_prs(
-                self._get_repo(repo_name),
-                self._oldest_issue_dates[repo_name]
+                self._get_repo(repo_name), self._oldest_issue_dates[repo_name]
             )
 
         for index, issue in enumerate(table):
             num = get_num_from_url(issue[1])
 
             for prs_index, num_field, prefix in (
-                (self._prs_index, 9, ''),
-                (self._internal_prs_index, 8, 'Q-')
+                (self._prs_index, 9, ""),
+                (self._internal_prs_index, 8, "Q-"),
             ):
 
                 if (num, prefix + issue[5]) in prs_index.keys():
-                    pull, repo_name = prs_index.pop(
-                        (num, prefix + issue[5])
-                    )
+                    pull, repo_name = prs_index.pop((num, prefix + issue[5]))
 
                     if pull.number != num:
-                        issue[num_field] = self.build_url(
-                            pull.number, repo_name
-                        )
+                        pr_url = self.build_url(pull.number, repo_name)
+                        try:
+                            closed_ind = closed_issues.index(issue)
+                            closed_issues[closed_ind][num_field] = pr_url
+                        except ValueError:
+                            pass
+
+                        issue[num_field] = pr_url
 
                         color = self._designate_status_color(pull)
                         if color:
-                            requests.append(gen_color_request(
-                                self._sheet_id,
-                                index + 1,
-                                num_field,
-                                color
-                            ))
+                            requests.append(
+                                gen_color_request(
+                                    self._sheet_id, index + 1, num_field, color
+                                )
+                            )
         return requests
 
     def update_config(self, config):
@@ -136,15 +141,11 @@ class SheetBuilder:
         self._internal_prs_index = {}
         self._oldest_issue_dates = {}
 
-        self._labels = config['labels']
-        self._repo_names = config['repo_names']
-        self._repo_names_inverse = dict(
-            (v, k) for k, v in self._repo_names.items()
-        )
+        self._labels = config["labels"]
+        self._repo_names = config["repo_names"]
+        self._repo_names_inverse = dict((v, k) for k, v in self._repo_names.items())
 
-        self._reverse_team = dict(
-            (v, k) for k, v in config['team'].items()
-        )
+        self._reverse_team = dict((v, k) for k, v in config["team"].items())
 
     def _get_repo(self, repo_name):
         """Return repo object by name.
@@ -180,15 +181,11 @@ class SheetBuilder:
                 linked issue number.
         """
         # internal PR
-        if repo.full_name.startswith('q-logic/'):
-            self._internal_prs_index[
-                key_exp.split()[1], repo_lts
-            ] = lpr
+        if repo.full_name.startswith("q-logic/"):
+            self._internal_prs_index[key_exp.split()[1], repo_lts] = lpr
         # public PR
         else:
-            self._prs_index[
-                key_exp.split('#')[1], repo_lts
-            ] = lpr
+            self._prs_index[key_exp.split("#")[1], repo_lts] = lpr
 
     def _index_closed_prs(self, repo, since_date):
         """Add to PRs index closed pull requests.
@@ -202,17 +199,13 @@ class SheetBuilder:
                 which was created before this date, are
                 meaningless.
         """
-        pulls = repo.get_pulls(
-            state='closed', sort='created', direction='desc'
-        )
+        pulls = repo.get_pulls(state="closed", sort="created", direction="desc")
 
         repo_lts = self._repo_names[repo.full_name]
         for pull in pulls:
             result = self._try_match_keywords(pull.body)
             if result:
-                self._add_into_index(
-                    repo, repo_lts, (pull, repo_lts), result
-                )
+                self._add_into_index(repo, repo_lts, (pull, repo_lts), result)
 
     def _build_issue_dict(self, issue, repo):
         """
@@ -228,29 +221,26 @@ class SheetBuilder:
         row = {}
         repo_lts = self._repo_names[repo.full_name]
         if issue.pull_request is None:
-            row['Priority'] = 'Medium'
-            row['Issue'] = '=HYPERLINK("{url}";"{num}")'.format(
+            row["Priority"] = "Medium"
+            row["Issue"] = '=HYPERLINK("{url}";"{num}")'.format(
                 num=issue.number, url=issue.html_url
             )
-            row['Work status'] = 'Pending'
-            row['Created'] = issue.created_at.strftime('%d %b %Y')
-            row['Description'] = issue.title
-            row['Repository'] = repo_lts
-            row['Project'] = self._get_project_name(issue.get_labels())
-            row['Assignee'] = 'N/A'
+            row["Work status"] = "Pending"
+            row["Created"] = issue.created_at.strftime("%d %b %Y")
+            row["Description"] = issue.title
+            row["Repository"] = repo_lts
+            row["Project"] = self._get_project_name(issue.get_labels())
+            row["Assignee"] = "N/A"
             assignee = issue.assignee
             if assignee:
-                row['Assignee'] = self._reverse_team.get(assignee.login, 'Other')
+                row["Assignee"] = self._reverse_team.get(assignee.login, "Other")
         else:
             # add PR into index
             if not (issue.number, repo_lts) in self._prs_index.keys():
                 result = self._try_match_keywords(issue.body)
                 if result:
                     self._add_into_index(
-                        repo,
-                        repo_lts,
-                        (issue.as_pull_request(), repo_lts),
-                        result
+                        repo, repo_lts, (issue.as_pull_request(), repo_lts), result
                     )
         return row
 
@@ -259,12 +249,12 @@ class SheetBuilder:
         issue_labels = set()
 
         for label in labels:
-            if 'api:' in label.name:
-                label = self._labels.get(label.name, 'Other')
+            if "api:" in label.name:
+                label = self._labels.get(label.name, "Other")
                 issue_labels.add(label)
 
         issue_labels = sorted(list(issue_labels))
-        return ', '.join(issue_labels)
+        return ", ".join(issue_labels)
 
     def _try_match_keywords(self, body):
         """Try to find keywords in issue's body.
@@ -291,9 +281,9 @@ class SheetBuilder:
 
         if pull.merged:
             status = PURPLE
-        elif pull.state == 'closed' and not pull.merged:
+        elif pull.state == "closed" and not pull.merged:
             status = PINK
-        elif pull.user.login not in SHEETS[self._sheet_name]['team'].values():
+        elif pull.user.login not in SHEETS[self._sheet_name]["team"].values():
             status = YELLOW_RAPS
 
         return status

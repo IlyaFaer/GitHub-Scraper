@@ -15,7 +15,7 @@ from const import HOUR_DURATION
 
 
 # spreadsheet_id = None
-spreadsheet_id = '1Z9QoQ8xUoOtHVUtrtLV6T78J30jvQS4uE0G4AK2Bhkc'
+spreadsheet_id = "1Z9QoQ8xUoOtHVUtrtLV6T78J30jvQS4uE0G4AK2Bhkc"
 
 spreadsheet = Spreadsheet(spreadsheet_id)
 
@@ -25,23 +25,15 @@ while True:
     importlib.reload(config)
 
     for sheet_name in config.SHEETS.keys():
-        print(str(
-            datetime.datetime.now()
-        ) + ': updating ' + sheet_name)
+        print(str(datetime.datetime.now()) + ": updating " + sheet_name)
 
-        spreadsheet.format_sheet(
-            sheet_name,
-            config.COLUMNS,
-            config.SHEETS[sheet_name]
-        )
+        spreadsheet.format_sheet(sheet_name, config.COLUMNS, config.SHEETS[sheet_name])
 
         try:
             spreadsheet.update_sheet(
-                sheet_name,
-                config.COLUMNS,
-                config.SHEETS[sheet_name]
+                sheet_name, config.COLUMNS, config.SHEETS[sheet_name]
             )
-            print(str(datetime.datetime.now()) + ': updated')
+            print(str(datetime.datetime.now()) + ": updated")
         except Exception:
             traceback.print_exc()
 

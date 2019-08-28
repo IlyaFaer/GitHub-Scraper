@@ -12,7 +12,7 @@ from instances import Columns, Row
 from const import GREY
 
 
-DIGITS_PATTERN = re.compile(r'[\d*]+')
+DIGITS_PATTERN = re.compile(r"[\d*]+")
 service = auth.authenticate()
 
 
@@ -30,12 +30,11 @@ class CachedSheetsIds:
     def __init__(self, spreadsheet_id):
         self._sheet_ids = {}
 
-        resp = service.spreadsheets().get(
-            spreadsheetId=spreadsheet_id).execute()
+        resp = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
 
-        for sheet in resp['sheets']:
-            props = sheet['properties']
-            self._sheet_ids[props['title']] = props['sheetId']
+        for sheet in resp["sheets"]:
+            props = sheet["properties"]
+            self._sheet_ids[props["title"]] = props["sheetId"]
 
     def get(self, sheet_name):
         """Get sheet's numeric id by it's name.
@@ -65,13 +64,17 @@ class Spreadsheet:
 
         if not id_:
             # creating new spreadsheet with given sheets list
-            spreadsheet = service.spreadsheets().create(
-                body={
-                    'properties': {'title': TITLE},
-                    'sheets': _gen_sheets_struct(SHEETS.keys())
-                }
-            ).execute()
-            id_ = spreadsheet.get('spreadsheetId')
+            spreadsheet = (
+                service.spreadsheets()
+                .create(
+                    body={
+                        "properties": {"title": TITLE},
+                        "sheets": _gen_sheets_struct(SHEETS.keys()),
+                    }
+                )
+                .execute()
+            )
+            id_ = spreadsheet.get("spreadsheetId")
 
         self._sheets_ids = CachedSheetsIds(id_)
         self._id = id_
@@ -92,13 +95,11 @@ class Spreadsheet:
                 Dict with sheet's configurations.
         """
         # set validation for team members
-        cols[7]['values'] = list(config['team'].keys())
+        cols[7]["values"] = list(config["team"].keys())
 
-        self._columns = Columns(
-            cols, self._sheets_ids.get(sheet_name)
-        )
+        self._columns = Columns(cols, self._sheets_ids.get(sheet_name))
 
-        self._insert_into_sheet(sheet_name, [self._columns.names], 'A1')
+        self._insert_into_sheet(sheet_name, [self._columns.names], "A1")
         self._apply_formating_data(self._columns.requests)
 
     def update_sheet(self, sheet_name, columns_config, sheets_config):
@@ -123,7 +124,9 @@ class Spreadsheet:
         is_new_table = len(tracked_issues) == 0
         raw_new_table = build_index(issues_list, self._columns.names[:10])
 
-        link_fields = [col['name'] for col in columns_config if col.get('type') == 'link']
+        link_fields = [
+            col["name"] for col in columns_config if col.get("type") == "link"
+        ]
 
         # merging new and old tables
         for tracked_id in tracked_issues.keys():
@@ -142,7 +145,7 @@ class Spreadsheet:
                         tracked_issues[tracked_id][col] = updated_issue[col]
             # if no such issue in new table, than it was closed
             else:
-                closed_issues.append(tracked_issues[tracked_id])
+                closed_issues.append(tracked_issues[tracked_id].as_list)
                 continue
 
         self._insert_new_issues(tracked_issues, raw_new_table)
@@ -150,27 +153,26 @@ class Spreadsheet:
         new_table = list(tracked_issues.values())
         new_table.sort(key=sort_func)
 
-        print('-------------------------------')
+        print("-------------------------------")
         for index, row in enumerate(new_table):
             print(index + 1, row)
             new_table[index] = row.as_list
-        print('-------------------------------')
+        print("-------------------------------")
 
         sheet_id = self._sheets_ids.get(sheet_name)
+
         requests = []
-        requests += builder.fill_prs(new_table)
+        requests += builder.fill_prs(new_table, closed_issues)
 
         if not is_new_table:
             self._insert_blank_rows(sheet_id, new_table, raw_new_table)
 
-        self._insert_into_sheet(sheet_name, new_table, 'A2')
+        self._insert_into_sheet(sheet_name, new_table, "A2")
 
         # formating data
         for closed_issue in closed_issues:
-            num = new_table.index(closed_issue.as_list)
-            requests.append(gen_color_request(
-                sheet_id, num + 1, 1, GREY)
-            )
+            num = new_table.index(closed_issue)
+            requests.append(gen_color_request(sheet_id, num + 1, 1, GREY))
 
         self._apply_formating_data(requests)
 
@@ -217,21 +219,22 @@ class Spreadsheet:
 
         # generate insert requests
         for index in sorted(indexes, reverse=True):
-            insert_requests.append({
-                "insertRange": {
-                    "range": {
-                        "sheetId": sheet_id,
-                        "startRowIndex": index,
-                        "endRowIndex": index + 1
-                    },
-                    "shiftDimension": "ROWS"
+            insert_requests.append(
+                {
+                    "insertRange": {
+                        "range": {
+                            "sheetId": sheet_id,
+                            "startRowIndex": index,
+                            "endRowIndex": index + 1,
+                        },
+                        "shiftDimension": "ROWS",
+                    }
                 }
-            })
+            )
 
         if insert_requests:
             service.spreadsheets().batchUpdate(
-                spreadsheetId=self._id,
-                body={"requests": insert_requests}
+                spreadsheetId=self._id, body={"requests": insert_requests}
             ).execute()
 
     def _insert_new_issues(self, tracked_issues, new_issues):
@@ -243,7 +246,7 @@ class Spreadsheet:
         """
         for new_id in new_issues.keys():
             tracked_issues[new_id] = new_issues[new_id]
-            tracked_issues[new_id]['Priority'] = 'New'
+            tracked_issues[new_id]["Priority"] = "New"
 
     def _convert_to_rows(self, title_row, table):
         """Convert every list into Row.
@@ -267,12 +270,15 @@ class Spreadsheet:
 
         Returns: Issues index (dict).
         """
-        table = service.spreadsheets().values().get(
-            spreadsheetId=self._id, range=sheet_name
-        ).execute()['values']
+        table = (
+            service.spreadsheets()
+            .values()
+            .get(spreadsheetId=self._id, range=sheet_name)
+            .execute()["values"]
+        )
 
         title_row = table[0]
-        cols_list = [{'name': col} for col in title_row]
+        cols_list = [{"name": col} for col in title_row]
 
         table = table[1:]
         self._convert_to_rows(title_row[:10], table)
@@ -307,9 +313,9 @@ class Spreadsheet:
 
         service.spreadsheets().values().update(
             spreadsheetId=self._id,
-            range=sheet_name + '!' + sym_range,
-            valueInputOption='USER_ENTERED',
-            body={'values': rows}
+            range=sheet_name + "!" + sym_range,
+            valueInputOption="USER_ENTERED",
+            body={"values": rows},
         ).execute()
 
     def _apply_formating_data(self, requests):
@@ -320,7 +326,7 @@ class Spreadsheet:
                 Dicts, each of which represents single request.
         """
         if requests:
-            body = {'requests': requests}
+            body = {"requests": requests}
 
             service.spreadsheets().batchUpdate(
                 spreadsheetId=self._id, body=body
@@ -341,7 +347,7 @@ def build_index(table, column_names):
     """
     index = {}
     for row in table:
-        key = (get_num_from_url(row['Issue']), row['Repository'])
+        key = (get_num_from_url(row["Issue"]), row["Repository"])
         index[key] = Row(column_names)
         index[key].update(row)
     return index
@@ -353,7 +359,7 @@ def sort_func(row):
     Args:
         row (dict): Dict representation of single row.
     """
-    return row['Repository'], row['Project'], int(get_num_from_url(row['Issue']))
+    return row["Repository"], row["Project"], int(get_num_from_url(row["Issue"]))
 
 
 def _gen_sheets_struct(sheets_config):
@@ -369,6 +375,6 @@ def _gen_sheets_struct(sheets_config):
     sheets = []
 
     for sheet_name in sheets_config:
-        sheets.append({'properties': {'title': sheet_name}})
+        sheets.append({"properties": {"title": sheet_name}})
 
     return sheets
