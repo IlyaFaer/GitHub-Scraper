@@ -3,16 +3,14 @@ Funtions and objects, which uses Google Sheets API to
 build and update issues/PRs tables.
 """
 import string
-import re
 import sheet_builder
 import auth
 from utils import gen_color_request, get_num_from_url
 from config import TRACKED_FIELDS, TITLE, SHEETS
 from instances import Columns, Row
-from const import GREY
+from const import GREY, DIGITS_PATTERN
 
 
-DIGITS_PATTERN = re.compile(r"[\d*]+")
 service = auth.authenticate()
 
 
@@ -121,21 +119,10 @@ class Spreadsheet:
 
         # read existing data from sheet
         tracked_issues = self._read_sheet(sheet_name)
-        is_new_table = len(tracked_issues) == 0
         raw_new_table = build_index(issues_list, self._columns.names[:10])
-
-        link_fields = [
-            col["name"] for col in columns_config if col.get("type") == "link"
-        ]
 
         # merging new and old tables
         for tracked_id in tracked_issues.keys():
-            # reset URLs, if they became just numbers
-            for col in tracked_issues[tracked_id].keys():
-                if col in link_fields and tracked_issues[tracked_id][col].isdigit():
-                    tracked_issues[tracked_id][col] = builder.build_url(
-                        tracked_issues[tracked_id][col], tracked_id[1]
-                    )
 
             # updating tracked columns
             if tracked_id in raw_new_table:
@@ -163,9 +150,6 @@ class Spreadsheet:
 
         requests = []
         requests += builder.fill_prs(new_table, closed_issues)
-
-        if not is_new_table:
-            self._insert_blank_rows(sheet_id, new_table, raw_new_table)
 
         self._insert_into_sheet(sheet_name, new_table, "A2")
 
@@ -196,46 +180,6 @@ class Spreadsheet:
             self._builders[sheet_name] = builder
 
         return builder
-
-    def _insert_blank_rows(self, sheet_id, new_table, new_issues):
-        """
-        Inserting blank rows to new issue's position,
-        to make correct shift of untracked fields.
-
-        Args:
-            sheet_id (int): Numeric sheet id.
-
-            new_table (list):
-                Lists, each of which represents single row.
-
-            new_issues (dict): Index of new issues
-        """
-        insert_requests = []
-        indexes = []
-
-        # get all new rows indexes
-        for id_ in new_issues:
-            indexes.append(new_table.index(new_issues[id_].as_list) + 1)
-
-        # generate insert requests
-        for index in sorted(indexes, reverse=True):
-            insert_requests.append(
-                {
-                    "insertRange": {
-                        "range": {
-                            "sheetId": sheet_id,
-                            "startRowIndex": index,
-                            "endRowIndex": index + 1,
-                        },
-                        "shiftDimension": "ROWS",
-                    }
-                }
-            )
-
-        if insert_requests:
-            service.spreadsheets().batchUpdate(
-                spreadsheetId=self._id, body={"requests": insert_requests}
-            ).execute()
 
     def _insert_new_issues(self, tracked_issues, new_issues):
         """Insert new issues into index of tracked issues.
@@ -273,7 +217,7 @@ class Spreadsheet:
         table = (
             service.spreadsheets()
             .values()
-            .get(spreadsheetId=self._id, range=sheet_name)
+            .get(spreadsheetId=self._id, range=sheet_name, valueRenderOption="FORMULA")
             .execute()["values"]
         )
 
@@ -281,11 +225,11 @@ class Spreadsheet:
         cols_list = [{"name": col} for col in title_row]
 
         table = table[1:]
-        self._convert_to_rows(title_row[:10], table)
+        self._convert_to_rows(title_row, table)
 
         sheet_id = self._sheets_ids.get(sheet_name)
         self._columns = Columns(cols_list, sheet_id)
-        return build_index(table, title_row[:10])
+        return build_index(table, title_row)
 
     def _insert_into_sheet(self, sheet_name, rows, start_from):
         """Write new data into specified sheet.

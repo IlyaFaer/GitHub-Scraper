@@ -5,19 +5,8 @@ them into structures.
 from github import Github
 from config import SHEETS
 from utils import gen_color_request, get_num_from_url
-from const import YELLOW_RAPS, PINK, PURPLE
-import re
+from const import YELLOW_RAPS, PINK, PURPLE, PATTERNS
 import datetime
-
-
-# patterns, which are used for designation connections
-# between issues and PRs
-PATTERNS = (
-    re.compile("Fixes[\:]? #[\d*]+"),
-    re.compile("Closes[\:]? #[\d*]+"),
-    re.compile("Towards[\:]? #[\d*]+"),
-    re.compile("IPR[\:]? [\d*]+"),
-)
 
 
 # authenticate in GitHub
@@ -38,6 +27,7 @@ class SheetBuilder:
         self._prs_index = {}
         self._internal_prs_index = {}
         self._reverse_team = {}
+        # since this date we're looking for PRs
         self._oldest_issue_dates = {}
 
         self._sheet_name = sheet_name
@@ -66,19 +56,15 @@ class SheetBuilder:
 
         return rows
 
-    def build_url(self, num, repo_lts):
-        """Build issue's URL.
+    def build_url_formula(self, issue):
+        """Build formula with issue's URL.
 
         Args:
-            num (int): Issue's number.
-            repo_lts (str): Repo's short name.
+            issue (github.Issue.Issue): Issue/PR object.
 
         Returns: issue's link (str).
         """
-        repo = self._repo_names_inverse[repo_lts]
-        url = '=HYPERLINK("https://github.com/{repo}/issues/{num}";"{num}")'.format(
-            repo=repo, num=num
-        )
+        url = '=HYPERLINK("{url}";"{num}")'.format(num=issue.number, url=issue.html_url)
         return url
 
     def fill_prs(self, table, closed_issues):
@@ -113,7 +99,7 @@ class SheetBuilder:
                     pull, repo_name = prs_index.pop((num, prefix + issue[5]))
 
                     if pull.number != num:
-                        pr_url = self.build_url(pull.number, repo_name)
+                        pr_url = self.build_url_formula(pull)
                         try:
                             closed_ind = closed_issues.index(issue)
                             closed_issues[closed_ind][num_field] = pr_url
@@ -222,9 +208,7 @@ class SheetBuilder:
         repo_lts = self._repo_names[repo.full_name]
         if issue.pull_request is None:
             row["Priority"] = "Medium"
-            row["Issue"] = '=HYPERLINK("{url}";"{num}")'.format(
-                num=issue.number, url=issue.html_url
-            )
+            row["Issue"] = self.build_url_formula(issue)
             row["Work status"] = "Pending"
             row["Created"] = issue.created_at.strftime("%d %b %Y")
             row["Description"] = issue.title
