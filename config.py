@@ -109,7 +109,6 @@ COLUMNS = (
         'name': 'Issue',  # 1
         'width': 50,
         'align': 'CENTER',
-        'type': 'link',
     },
     {
         'name': 'Work status',  # 2
@@ -145,12 +144,10 @@ COLUMNS = (
     {
         'name': 'Internal PR',  # 8
         'align': 'CENTER',
-        'type': 'link',
     },
     {
         'name': 'Public PR',  # 9
         'align': 'CENTER',
-        'type': 'link'
     },
     {
         'name': 'Task',  # 10

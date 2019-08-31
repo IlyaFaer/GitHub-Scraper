@@ -133,30 +133,25 @@ class Spreadsheet:
             # if no such issue in new table, than it was closed
             else:
                 closed_issues.append(tracked_issues[tracked_id].as_list)
-                continue
 
         self._insert_new_issues(tracked_issues, raw_new_table)
 
         new_table = list(tracked_issues.values())
         new_table.sort(key=sort_func)
 
-        print("-------------------------------")
         for index, row in enumerate(new_table):
-            print(index + 1, row)
             new_table[index] = row.as_list
-        print("-------------------------------")
 
-        sheet_id = self._sheets_ids.get(sheet_name)
-
-        requests = []
-        requests += builder.fill_prs(new_table, closed_issues)
+        requests = builder.fill_prs(new_table, closed_issues)
 
         self._insert_into_sheet(sheet_name, new_table, "A2")
 
         # formating data
         for closed_issue in closed_issues:
             num = new_table.index(closed_issue)
-            requests.append(gen_color_request(sheet_id, num + 1, 1, GREY))
+            requests.append(
+                gen_color_request(self._sheets_ids.get(sheet_name), num + 1, 1, GREY)
+            )
 
         self._apply_formating_data(requests)
 
