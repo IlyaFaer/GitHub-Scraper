@@ -139,6 +139,7 @@ class Spreadsheet:
         new_table = list(tracked_issues.values())
         new_table.sort(key=sort_func)
 
+        # convert rows into lists
         for index, row in enumerate(new_table):
             new_table[index] = row.as_list
 
@@ -238,7 +239,7 @@ class Spreadsheet:
                 row in a sheet.
 
             start_from (str):
-                Symbolic index, from which data inserting
+                Symbolic index, from which data insertion
                 must start.
         """
 

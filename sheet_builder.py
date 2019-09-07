@@ -154,6 +154,8 @@ class SheetBuilder:
     def _add_into_index(self, repo, repo_lts, lpr, key_exp):
         """Add PR into inner index for future use.
 
+        In table only last PR will be shown.
+
         Args:
             repo (github.Repository.Repository):
                 Repository object.
@@ -168,10 +170,14 @@ class SheetBuilder:
         """
         # internal PR
         if repo.full_name.startswith("q-logic/"):
-            self._internal_prs_index[key_exp.split()[1], repo_lts] = lpr
+            issue_num = key_exp.split()[1]
+            if not (issue_num, repo_lts) in self._internal_prs_index:
+                self._internal_prs_index[issue_num, repo_lts] = lpr
         # public PR
         else:
-            self._prs_index[key_exp.split("#")[1], repo_lts] = lpr
+            issue_num = key_exp.split("#")[1]
+            if not (issue_num, repo_lts) in self._prs_index:
+                self._prs_index[issue_num, repo_lts] = lpr
 
     def _index_closed_prs(self, repo, since_date):
         """Add to PRs index closed pull requests.
@@ -189,9 +195,9 @@ class SheetBuilder:
 
         repo_lts = self._repo_names[repo.full_name]
         for pull in pulls:
-            result = self._try_match_keywords(pull.body)
-            if result:
-                self._add_into_index(repo, repo_lts, (pull, repo_lts), result)
+            key_phrases = self._try_match_keywords(pull.body)
+            for key_phrase in key_phrases:
+                self._add_into_index(repo, repo_lts, (pull, repo_lts), key_phrase)
 
     def _build_issue_dict(self, issue, repo):
         """
@@ -221,10 +227,10 @@ class SheetBuilder:
         else:
             # add PR into index
             if not (issue.number, repo_lts) in self._prs_index.keys():
-                result = self._try_match_keywords(issue.body)
-                if result:
+                key_phrases = self._try_match_keywords(issue.body)
+                for key_phrase in key_phrases:
                     self._add_into_index(
-                        repo, repo_lts, (issue.as_pull_request(), repo_lts), result
+                        repo, repo_lts, (issue.as_pull_request(), repo_lts), key_phrase
                     )
         return row
 
@@ -246,13 +252,14 @@ class SheetBuilder:
         Args:
             body (str): Issue's body.
 
-        Returns: Keyword with issue number, if found.
+        Returns: List of key phrases with issue numbers, if found.
         """
         if body:
             for pattern in PATTERNS:
                 result = pattern.findall(body)
                 if result:
-                    return result[0]
+                    return result
+        return []
 
     def _designate_status_color(self, pull):
         """Check PR's status and return corresponding color.

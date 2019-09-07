@@ -16,11 +16,10 @@ from const import HOUR_DURATION
 
 # spreadsheet_id = None
 spreadsheet_id = "1Z9QoQ8xUoOtHVUtrtLV6T78J30jvQS4uE0G4AK2Bhkc"
-
 spreadsheet = Spreadsheet(spreadsheet_id)
 
 # updating table every hour
-# if exception raised, print it's message and continue
+# if exception raised, print it's traceback and continue
 while True:
     importlib.reload(config)
 
