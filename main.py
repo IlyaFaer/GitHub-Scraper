@@ -7,12 +7,18 @@ from config.py to get new preferences.
 """
 import datetime
 import time
-import traceback
 import importlib
+import logging
 import config
 from spreadsheet import Spreadsheet
 from const import HOUR_DURATION
 
+
+logging.basicConfig(
+    filename="logs.txt",
+    format="[%(levelname)s] %(asctime)s: %(message)s",
+    level=logging.INFO,
+)
 
 # spreadsheet_id = None
 spreadsheet_id = "1Z9QoQ8xUoOtHVUtrtLV6T78J30jvQS4uE0G4AK2Bhkc"
@@ -24,16 +30,15 @@ while True:
     importlib.reload(config)
 
     for sheet_name in config.SHEETS.keys():
-        print(str(datetime.datetime.now()) + ": updating " + sheet_name)
-
+        logging.info("updating " + sheet_name)
         spreadsheet.format_sheet(sheet_name, config.COLUMNS, config.SHEETS[sheet_name])
 
         try:
             spreadsheet.update_sheet(
                 sheet_name, config.COLUMNS, config.SHEETS[sheet_name]
             )
-            print(str(datetime.datetime.now()) + ": updated")
-        except Exception:
-            traceback.print_exc()
+            logging.info("updated")
+        except:
+            logging.exception("Exception occured:")
 
     time.sleep(HOUR_DURATION)
