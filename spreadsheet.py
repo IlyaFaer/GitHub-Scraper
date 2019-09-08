@@ -5,8 +5,8 @@ build and update issues/PRs tables.
 import string
 import sheet_builder
 import auth
+import config
 from utils import gen_color_request, get_num_from_url
-from config import TRACKED_FIELDS, TITLE, SHEETS
 from instances import Columns, Row
 from const import GREY, DIGITS_PATTERN
 
@@ -16,7 +16,7 @@ service = auth.authenticate()
 
 class CachedSheetsIds:
     """
-    Class posts request to get all sheets of specified
+    Class posts request to get all the sheets from specified
     spreadsheet, and then keeps sheet's ids in inner dict
     for future needs.
 
@@ -66,8 +66,8 @@ class Spreadsheet:
                 service.spreadsheets()
                 .create(
                     body={
-                        "properties": {"title": TITLE},
-                        "sheets": _gen_sheets_struct(SHEETS.keys()),
+                        "properties": {"title": config.TITLE},
+                        "sheets": _gen_sheets_struct(config.SHEETS.keys()),
                     }
                 )
                 .execute()
@@ -127,7 +127,7 @@ class Spreadsheet:
             # updating tracked columns
             if tracked_id in raw_new_table:
                 updated_issue = raw_new_table.pop(tracked_id)
-                for col in TRACKED_FIELDS:
+                for col in config.TRACKED_FIELDS:
                     if updated_issue[col]:
                         tracked_issues[tracked_id][col] = updated_issue[col]
             # if no such issue in new table, than it was closed
@@ -135,50 +135,76 @@ class Spreadsheet:
                 closed_issues.append(tracked_issues[tracked_id].as_list)
 
         self._insert_new_issues(tracked_issues, raw_new_table)
+        new_table = self._rows_to_lists(tracked_issues.values())
 
-        new_table = list(tracked_issues.values())
-        new_table.sort(key=sort_func)
+        requests = builder.fill_prs(new_table, closed_issues)
+        self._insert_into_sheet(sheet_name, new_table, "A2")
+
+        requests += self._gen_closed_requests(closed_issues, new_table, sheet_name)
+        self._apply_formating_data(requests)
+
+    def _rows_to_lists(self, tracked_issues):
+        """Convert every Row into list before sending into spreadsheet.
+
+        Args:
+            tracked_issues (list): Rows, each of which represents single row.
+
+        Returns:
+            list: lists, each of which represents single row.
+        """
+        new_table = list(tracked_issues)
+        new_table.sort(key=config.sort_func)
 
         # convert rows into lists
         for index, row in enumerate(new_table):
             new_table[index] = row.as_list
 
-        requests = builder.fill_prs(new_table, closed_issues)
+        return new_table
 
-        self._insert_into_sheet(sheet_name, new_table, "A2")
+    def _gen_closed_requests(self, closed_issues, new_table, sheet_name):
+        """Generate requests for marking closed issues with color.
 
-        # formating data
+        Args:
+            closed_issues (list): Issues, that are already closed.
+
+            new_table (list): New data to insert into spreadsheet.
+
+            sheet_name (str): Name of the sheet to be updated.
+
+        Returns:
+            list: formatting requests for Google Sheets API.
+        """
+        requests = []
+
         for closed_issue in closed_issues:
             num = new_table.index(closed_issue)
             requests.append(
                 gen_color_request(self._sheets_ids.get(sheet_name), num + 1, 1, GREY)
             )
-
-        self._apply_formating_data(requests)
+        return requests
 
     def _get_sheet_builder(self, sheet_name):
         """Return builder for specified sheet.
 
-        If builder already created, it'll be returned from
+        If builder already created, it'll be taken from
         inner index. Otherwise, it'll be created.
 
         Args:
             sheet_name (str):
                 Name of sheet, for which builder
-                must be returned/created.
+                must be taken/created.
 
         Returns: SheetBuilder linked with the given sheet.
         """
-        builder = self._builders.get(sheet_name)
-        if builder is None:
+        if sheet_name not in self._builders:
             sheet_id = self._sheets_ids.get(sheet_name)
-            builder = sheet_builder.SheetBuilder(sheet_name, sheet_id)
-            self._builders[sheet_name] = builder
-
-        return builder
+            self._builders[sheet_name] = sheet_builder.SheetBuilder(
+                sheet_name, sheet_id
+            )
+        return self._builders[sheet_name]
 
     def _insert_new_issues(self, tracked_issues, new_issues):
-        """Insert new issues into index of tracked issues.
+        """Insert new issues into tracked issues index.
 
         Args:
             tracked_issues (dict): Index of tracked issues.
@@ -217,13 +243,12 @@ class Spreadsheet:
             .execute()["values"]
         )
 
-        title_row = table[0]
-        cols_list = [{"name": col} for col in title_row]
+        title_row, table = table[0], table[1:]
 
-        table = table[1:]
         self._convert_to_rows(title_row, table)
-
         sheet_id = self._sheets_ids.get(sheet_name)
+
+        cols_list = [{"name": col} for col in title_row]
         self._columns = Columns(cols_list, sheet_id)
         return build_index(table, title_row)
 
@@ -242,7 +267,6 @@ class Spreadsheet:
                 Symbolic index, from which data insertion
                 must start.
         """
-
         start_index = int(DIGITS_PATTERN.findall(start_from)[0])
 
         sym_range = "{start_from}:{last_sym}{count}".format(
@@ -281,7 +305,7 @@ def build_index(table, column_names):
     }
 
     Args:
-        column_names (list): List of tracked columns names.
+        column_names (list): Tracked columns names.
 
     Returns: Dict, which values represents rows.
     """
@@ -291,15 +315,6 @@ def build_index(table, column_names):
         index[key] = Row(column_names)
         index[key].update(row)
     return index
-
-
-def sort_func(row):
-    """Function that sorts data in table.
-
-    Args:
-        row (dict): Dict representation of single row.
-    """
-    return row["Repository"], row["Project"], int(get_num_from_url(row["Issue"]))
 
 
 def _gen_sheets_struct(sheets_config):

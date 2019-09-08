@@ -5,13 +5,11 @@ described in config.py file, and then updates it every
 hour. Before every update tracker reloads structure
 from config.py to get new preferences.
 """
-import datetime
 import time
 import importlib
 import logging
 import config
 from spreadsheet import Spreadsheet
-from const import HOUR_DURATION
 
 
 logging.basicConfig(
@@ -38,7 +36,7 @@ while True:
                 sheet_name, config.COLUMNS, config.SHEETS[sheet_name]
             )
             logging.info("updated")
-        except:
+        except Exception:
             logging.exception("Exception occured:")
 
-    time.sleep(HOUR_DURATION)
+    time.sleep(config.UPDATE_PERIODICITY)

@@ -4,9 +4,11 @@ columns style, data validation, tracked repositories,
 tracked fields, etc..
 """
 from const import GREY, GREEN, BLUE, PINK, RED_KRAYOLA, GREEN_GOOD, WHITE, YELLOW
+from utils import get_num_from_url
 
 
 TITLE = "QLogic Internal Review"  # spreadsheet title
+UPDATE_PERIODICITY = 3600  # duration of pause between updates
 
 # sheets structure
 SHEETS = {
@@ -125,3 +127,12 @@ COLUMNS = (
     {"name": "Opened", "align": "CENTER", "type": "date"},  # 11
     {"name": "Comment", "width": 550},  # 12
 )
+
+
+def sort_func(row):
+    """Function that sorts data in the sheet.
+
+    Args:
+        row (dict): Dict representation of single row.
+    """
+    return row["Repository"], row["Project"], int(get_num_from_url(row["Issue"]))

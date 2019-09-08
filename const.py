@@ -13,8 +13,6 @@ PATTERNS = (
 
 NUM_REGEX = re.compile(r"""(?P<num>"[\d]+")""")
 
-HOUR_DURATION = 3600
-
 YELLOW_RAPS = {"red": 1, "green": 0.81, "blue": 0.28}
 
 RED = {"red": 1, "green": 0.38, "blue": 0.52}
