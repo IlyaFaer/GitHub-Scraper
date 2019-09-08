@@ -32,7 +32,7 @@ To make scraper detect PRs, use GitHub keywords "Towards", "Closes", "Fixes" in 
 
 **PR color**  
 Public PR's number may be colored. Colors has their meaning:  
-Gold - PR was created by not team member
+Gold - PR was created by not team member  
 Red - PR had been closed  
 Violet - PR had been merged  
 
