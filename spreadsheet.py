@@ -93,7 +93,7 @@ class Spreadsheet:
                 Dict with sheet's configurations.
         """
         # set validation for team members
-        cols[7]["values"] = list(config["team"].keys())
+        cols[7]["values"] = config["team"]
 
         self._columns = Columns(cols, self._sheets_ids.get(sheet_name))
 

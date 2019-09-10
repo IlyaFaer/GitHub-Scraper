@@ -26,9 +26,9 @@ class SheetBuilder:
         self._repo_names_inverse = {}
         self._prs_index = {}
         self._internal_prs_index = {}
-        self._reverse_team = {}
         # since this date we're looking for PRs
         self._oldest_issue_dates = {}
+        self._team = []
 
         self._sheet_name = sheet_name
         self._sheet_id = sheet_id
@@ -130,8 +130,7 @@ class SheetBuilder:
         self._labels = config["labels"]
         self._repo_names = config["repo_names"]
         self._repo_names_inverse = dict((v, k) for k, v in self._repo_names.items())
-
-        self._reverse_team = dict((v, k) for k, v in config["team"].items())
+        self._team = config["team"]
 
     def _get_repo(self, repo_name):
         """Return repo object by name.
@@ -223,7 +222,9 @@ class SheetBuilder:
             row["Assignee"] = "N/A"
             assignee = issue.assignee
             if assignee:
-                row["Assignee"] = self._reverse_team.get(assignee.login, "Other")
+                row["Assignee"] = (
+                    assignee.login if assignee.login in self._team else "Other"
+                )
         else:
             # add PR into index
             if not (issue.number, repo_lts) in self._prs_index.keys():
@@ -274,7 +275,7 @@ class SheetBuilder:
             status = PURPLE
         elif pull.state == "closed" and not pull.merged:
             status = PINK
-        elif pull.user.login not in SHEETS[self._sheet_name]["team"].values():
+        elif pull.user.login not in SHEETS[self._sheet_name]["team"]:
             status = YELLOW_RAPS
 
         return status

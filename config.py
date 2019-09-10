@@ -30,17 +30,17 @@ SHEETS = {
             "q-logic/google-cloud-python": "Q-GCP",
             "q-logic/google-resumable-media-python": "Q-GRMP",
         },
-        "team": {  # team, that works in this repos
-            "Ilya": "IlyaFaer",
-            "Hemang": "HemangChothani",
-            "Maxim": "mf2199",
-            "Paras": "pchauhan-qlogic",
-            "Sumit": "sumit-ql",
-            "Sangram": "sangramql",
-            "Leonid": "Emar-Kar",
-            "N/A": "",
-            "Other": "Other",
-        },
+        "team": [  # team, that works in this repos
+            "IlyaFaer",
+            "HemangChothani",
+            "mf2199",
+            "pchauhan-qlogic",
+            "sumit-ql",
+            "sangramql",
+            "Emar-Kar",
+            "Other",
+            "N/A",
+        ],
     },
     # -----------------------------
     "NodeJS": {
@@ -53,16 +53,16 @@ SHEETS = {
             "googleapis/nodejs-bigtable": "BigTable",
             "googleapis/nodejs-pubsub": "PubSub",
         },
-        "team": {
-            "Lalji": "laljikanjareeya",
-            "Praveen": "praveenqlogic01",
-            "Jiren": "jiren",
-            "Vishal": "vishald123",
-            "Alex": "AVaksman",
-            "Ivan": "IvanAvanessov",
-            "N/A": "",
-            "Other": "Other",
-        },
+        "team": [
+            "laljikanjareeya",
+            "praveenqlogic01",
+            "jiren",
+            "vishald123",
+            "AVaksman",
+            "IvanAvanessov",
+            "Other",
+            "N/A",
+        ],
     },
     # -----------------------------
     "Golang": {
@@ -75,13 +75,7 @@ SHEETS = {
             "api: pubsub": "PubSub",
         },
         "repo_names": {"googleapis/google-cloud-go": "GCG"},
-        "team": {
-            "Ilya": "IlyaFaer",
-            "Aleksandra": "AlesskaPie",
-            "Emmanuel": "odeke-em",
-            "N/A": "",
-            "Other": "Other",
-        },
+        "team": ["IlyaFaer", "AlesskaPie", "Other", "N/A"],
     },
 }
 
