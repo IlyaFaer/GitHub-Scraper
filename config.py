@@ -77,6 +77,19 @@ SHEETS = {
         "repo_names": {"googleapis/google-cloud-go": "GCG"},
         "team": ["IlyaFaer", "AlesskaPie", "Other", "N/A"],
     },
+    # -----------------------------
+    "PHP": {
+        "labels": {
+            "api: storage": "Storage",
+            "api: firestore": "FireStore",
+            "api: bigquery": "BigQuery",
+            "api: bigtable": "BigTable",
+            "api: spanner": "Spanner",
+            "api: pubsub": "PubSub",
+        },
+        "repo_names": {"googleapis/google-cloud-php": "GCPHP"},
+        "team": ["andrewinc", "Other", "N/A"],
+    },
 }
 
 # fields, that must be updated on every sheet update
