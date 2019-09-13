@@ -18,11 +18,11 @@ Do not change table architecture manually without updating scraper code! Columns
 **Configurations**  
 Scraper uses *config.py* file as a source of preferences. Before update it reloads *config.py* module, so you can change table's preferences without stoping scraper's main program. Configurations are set with several constants:
 * TITLE - spreadsheet name
-* UPDATE_PERIODICITY - duration of pause between updates in seconds.
+* UPDATE_PERIODICITY - duration of pause between updates in seconds
 * SHEETS - spreadsheet preferences: list of sheets with their names, meaningful labels, lists of corresponding repositories and team list
 * TRACKED_FIELDS - names of columns, that should be rewriten on every update
 * COLUMNS - column preferences. In this structure you can set column name, width, data aligning and data validation (with corresponding color for some values)
-* sort_func - function, which is used by scraper for sorting issues in sheet.  
+* sort_func - function, which is used by scraper for sorting issues in sheet  
 
 **Updating**  
 At specified intervals scraper makes request to GitHub to get issues/PRs list. If new issues have been created, scraper will add them into the table with *Priority* 'New'. If some issues have been closed, scraper will make their number grey.  
@@ -37,7 +37,7 @@ Red - PR had been closed
 Violet - PR had been merged  
 
 **Assignee**  
-In *config.py* you can specify team members. If any member assigned issue, his name will be shown in Assignee column. If issue was assigned by someone else, you'll see "Other" in Assignee column.  
+In *config.py* you can specify team members. If any member assigned issue, his login will be shown in Assignee column. If issue was assigned by someone else, you'll see "Other" in Assignee column.  
 
 **Future features**  
 * Statistics row
