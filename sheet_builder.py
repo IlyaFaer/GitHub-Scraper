@@ -3,7 +3,6 @@ Utils for reading data from GitHub and building
 them into structures.
 """
 from github import Github
-from config import SHEETS
 from utils import gen_color_request, get_num_from_url
 from const import YELLOW_RAPS, PINK, PURPLE, PATTERNS
 import datetime
@@ -205,6 +204,7 @@ class SheetBuilder:
 
         Args:
             issue (github.Issue.Issue): Issue object.
+
             repo (github.Repository.Repository): Repository object.
 
         Returns: dict representation of single row.
@@ -275,7 +275,7 @@ class SheetBuilder:
             status = PURPLE
         elif pull.state == "closed" and not pull.merged:
             status = PINK
-        elif pull.user.login not in SHEETS[self._sheet_name]["team"]:
+        elif pull.user.login not in self._team:
             status = YELLOW_RAPS
 
         return status

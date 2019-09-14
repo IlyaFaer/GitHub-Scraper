@@ -218,4 +218,3 @@ class Row(dict):
                 self[name] = list_[index]
             else:
                 self[name] = ""
-

@@ -88,8 +88,7 @@ class Spreadsheet:
         and add data validation according to config module.
 
         Args:
-            sheet_name (str):
-                Name of sheet which must be formatted.
+            sheet_name (str): Name of sheet which must be formatted.
         """
         # set validation for team members
         self._config.COLUMNS[7]["values"] = self._config.SHEETS[sheet_name]["team"]
@@ -125,7 +124,7 @@ class Spreadsheet:
                 for col in self._config.TRACKED_FIELDS:
                     if updated_issue[col] not in (None, "N/A"):
                         tracked_issues[tracked_id][col] = updated_issue[col]
-            # if no such issue in new table, than it was closed
+            # if there is no such issue in new table, than it was closed
             else:
                 closed_issues.append(tracked_issues[tracked_id].as_list)
 
