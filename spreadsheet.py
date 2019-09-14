@@ -5,7 +5,6 @@ build and update issues/PRs tables.
 import string
 import sheet_builder
 import auth
-import config
 from utils import gen_color_request, get_num_from_url
 from instances import Columns, Row
 from const import GREY, DIGITS_PATTERN
@@ -16,7 +15,7 @@ service = auth.authenticate()
 
 class CachedSheetsIds:
     """
-    Class posts request to get all the sheets from specified
+    Class posts request to get all the sheets of specified
     spreadsheet, and then keeps sheet's ids in inner dict
     for future needs.
 
@@ -48,17 +47,22 @@ class CachedSheetsIds:
 class Spreadsheet:
     """Object for reading/updating Google spreadsheet.
 
-    Uses 'config' args to update spreasheet's structure
+    Uses 'config' attr to update spreasheet's structure
     and SheetBuilders to fill sheets with issues/PRs data.
 
     Args:
+        config (module):
+            Imported config.py module with all
+            spreadsheet preferences.
+
         id_ (str):
             Id of existing spreadsheet. If not given, new
             spreadsheet will be created.
     """
 
-    def __init__(self, id_=None):
+    def __init__(self, config, id_=None):
         self._builders = {}  # list of builders for every sheet
+        self._config = config
 
         if not id_:
             # creating new spreadsheet with given sheets list
@@ -77,44 +81,35 @@ class Spreadsheet:
         self._sheets_ids = CachedSheetsIds(id_)
         self._id = id_
 
-    def format_sheet(self, sheet_name, cols, config):
-        """
+    def format_sheet(self, sheet_name):
+        """Update sheet's structure.
+
         Create title row in specified sheet, format columns
-        and add data validation according to 'config' arg.
+        and add data validation according to config module.
 
         Args:
             sheet_name (str):
                 Name of sheet which must be formatted.
-
-            cols (list):
-                List of dicts, in which columns described.
-
-            config (dict):
-                Dict with sheet's configurations.
         """
         # set validation for team members
-        cols[7]["values"] = config["team"]
+        self._config.COLUMNS[7]["values"] = self._config.SHEETS[sheet_name]["team"]
 
-        self._columns = Columns(cols, self._sheets_ids.get(sheet_name))
+        self._columns = Columns(self._config.COLUMNS, self._sheets_ids.get(sheet_name))
 
         self._insert_into_sheet(sheet_name, [self._columns.names], "A1")
         self._apply_formating_data(self._columns.requests)
 
-    def update_sheet(self, sheet_name, columns_config, sheets_config):
+    def update_sheet(self, sheet_name):
         """Update specified sheet with issues/PRs data.
 
         Args:
             sheet_name (str): Name of sheet to be updated.
-
-            columns_config (dict): Columns preferences.
-
-            sheets_config (dict): Sheet's preferences.
         """
         closed_issues = []
 
         # build new table from repositories
         builder = self._get_sheet_builder(sheet_name)
-        builder.update_config(sheets_config)
+        builder.update_config(self._config.SHEETS[sheet_name])
         issues_list = builder.build_table()
 
         # read existing data from sheet
@@ -127,8 +122,8 @@ class Spreadsheet:
             # updating tracked columns
             if tracked_id in raw_new_table:
                 updated_issue = raw_new_table.pop(tracked_id)
-                for col in config.TRACKED_FIELDS:
-                    if updated_issue[col]:
+                for col in self._config.TRACKED_FIELDS:
+                    if updated_issue[col] not in (None, "N/A"):
                         tracked_issues[tracked_id][col] = updated_issue[col]
             # if no such issue in new table, than it was closed
             else:
@@ -143,6 +138,16 @@ class Spreadsheet:
         requests += self._gen_closed_requests(closed_issues, new_table, sheet_name)
         self._apply_formating_data(requests)
 
+    def reload_config(self, config):
+        """Load config.py module into spreadsheet object.
+
+        Args:
+            config (module):
+                Imported config.py module with all
+                preferences.
+        """
+        self._config = config
+
     def _rows_to_lists(self, tracked_issues):
         """Convert every Row into list before sending into spreadsheet.
 
@@ -153,7 +158,7 @@ class Spreadsheet:
             list: lists, each of which represents single row.
         """
         new_table = list(tracked_issues)
-        new_table.sort(key=config.sort_func)
+        new_table.sort(key=self._config.sort_func)
 
         # convert rows into lists
         for index, row in enumerate(new_table):

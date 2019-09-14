@@ -6,6 +6,16 @@ tracked fields, etc..
 from const import GREY, GREEN, BLUE, PINK, RED_KRAYOLA, GREEN_GOOD, WHITE, YELLOW
 from utils import get_num_from_url
 
+projects_labels = {
+    "api: storage": "Storage",
+    "api: firestore": "FireStore",
+    "api: bigquery": "BigQuery",
+    "api: bigtable": "BigTable",
+    "api: spanner": "Spanner",
+    "api: pubsub": "PubSub",
+    "api: core": "Core",
+    "api: datastore": "Datastore",
+}
 
 TITLE = "QLogic Internal Review"  # spreadsheet title
 UPDATE_PERIODICITY = 3600  # duration of pause between updates
@@ -14,16 +24,7 @@ UPDATE_PERIODICITY = 3600  # duration of pause between updates
 SHEETS = {
     # -----------------------------
     "Python": {  # sheet name
-        "labels": {  # meaningful labels
-            "api: storage": "Storage",
-            "api: firestore": "FireStore",
-            "api: bigquery": "BigQuery",
-            "api: bigtable": "BigTable",
-            "api: spanner": "Spanner",
-            "api: pubsub": "PubSub",
-            "api: core": "Core",
-            "api: datastore": "Datastore",
-        },
+        "labels": projects_labels,
         "repo_names": {  # repos to track
             "googleapis/google-cloud-python": "GCP",
             "googleapis/google-resumable-media-python": "GRMP",
@@ -66,27 +67,13 @@ SHEETS = {
     },
     # -----------------------------
     "Golang": {
-        "labels": {
-            "api: storage": "Storage",
-            "api: firestore": "FireStore",
-            "api: bigquery": "BigQuery",
-            "api: bigtable": "BigTable",
-            "api: spanner": "Spanner",
-            "api: pubsub": "PubSub",
-        },
+        "labels": projects_labels,
         "repo_names": {"googleapis/google-cloud-go": "GCG"},
         "team": ["IlyaFaer", "AlesskaPie", "Other", "N/A"],
     },
     # -----------------------------
     "PHP": {
-        "labels": {
-            "api: storage": "Storage",
-            "api: firestore": "FireStore",
-            "api: bigquery": "BigQuery",
-            "api: bigtable": "BigTable",
-            "api: spanner": "Spanner",
-            "api: pubsub": "PubSub",
-        },
+        "labels": projects_labels,
         "repo_names": {"googleapis/google-cloud-php": "GCPHP"},
         "team": ["andrewinc", "Other", "N/A"],
     },
