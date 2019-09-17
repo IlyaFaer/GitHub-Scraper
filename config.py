@@ -69,7 +69,7 @@ SHEETS = {
     "Golang": {
         "labels": projects_labels,
         "repo_names": {"googleapis/google-cloud-go": "GCG"},
-        "team": ["IlyaFaer", "AlesskaPie", "Other", "N/A"],
+        "team": ["IlyaFaer", "AlesskaPie", "andrewelkin", "Other", "N/A"],
     },
     # -----------------------------
     "PHP": {
