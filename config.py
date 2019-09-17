@@ -74,7 +74,10 @@ SHEETS = {
     # -----------------------------
     "PHP": {
         "labels": projects_labels,
-        "repo_names": {"googleapis/google-cloud-php": "GCPHP"},
+        "repo_names": {
+            "googleapis/google-cloud-php": "GCPHP",
+            "q-logic/google-cloud-php": "Q-GCPHP",
+        },
         "team": ["andrewinc", "Other", "N/A"],
     },
 }
