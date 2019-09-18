@@ -35,7 +35,6 @@ SHEETS = {
             "IlyaFaer",
             "HemangChothani",
             "mf2199",
-            "pchauhan-qlogic",
             "sumit-ql",
             "sangramql",
             "Emar-Kar",
@@ -69,7 +68,7 @@ SHEETS = {
     "Golang": {
         "labels": projects_labels,
         "repo_names": {"googleapis/google-cloud-go": "GCG"},
-        "team": ["IlyaFaer", "AlesskaPie", "andrewelkin", "Other", "N/A"],
+        "team": ["IlyaFaer", "AlisskaPie", "andrewelkin", "Other", "N/A"],
     },
     # -----------------------------
     "PHP": {
