@@ -122,7 +122,7 @@ class Spreadsheet:
             if tracked_id in raw_new_table:
                 updated_issue = raw_new_table.pop(tracked_id)
                 for col in self._config.TRACKED_FIELDS:
-                    if updated_issue[col] not in (None, "N/A"):
+                    if updated_issue[col] not in (None, "N/A", "Other"):
                         tracked_issues[tracked_id][col] = updated_issue[col]
             # if there is no such issue in new table, than it was closed
             else:
