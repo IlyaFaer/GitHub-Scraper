@@ -1,5 +1,6 @@
 """Instances, that helps to process columns and rows."""
 import string
+from fill_funcs import dont_fill
 
 
 class Columns:
@@ -16,6 +17,7 @@ class Columns:
         self._sheet_id = sheet_id
         self._requests = []  # formating requests for columns
         self.names = []  # column names in title row
+        self.fill_funcs = {}
 
         # generating requests from configuration
         for index, col in enumerate(cols):
@@ -26,6 +28,8 @@ class Columns:
             self._gen_one_of_request(index, col)
             self._gen_color_requests(index, col)
             self._gen_date_type_request(index, col)
+
+            self.fill_funcs[col["name"]] = col.get("fill_func", dont_fill)
 
     @property
     def requests(self):

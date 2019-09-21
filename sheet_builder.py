@@ -212,7 +212,7 @@ class SheetBuilder:
         row = {}
         repo_lts = self._repo_names[repo.full_name]
         if issue.pull_request is None:
-            row["Priority"] = "Medium"
+            row["Issue_obj"] = issue
             row["Issue"] = self.build_url_formula(issue)
             row["Work status"] = "Pending"
             row["Created"] = issue.created_at.strftime("%d %b %Y")

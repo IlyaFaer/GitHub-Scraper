@@ -5,6 +5,8 @@ tracked fields, etc..
 """
 from const import GREY, GREEN, BLUE, PINK, RED_KRAYOLA, GREEN_GOOD, WHITE, YELLOW
 from utils import get_num_from_url
+from fill_funcs import fill_priority
+
 
 projects_labels = {
     "api: storage": "Storage",
@@ -83,7 +85,7 @@ SHEETS = {
 
 # fields, that must be updated on every sheet update
 # other fields will be left unchanged
-TRACKED_FIELDS = ("Created", "Description", "Project", "Assignee")
+TRACKED_FIELDS = ("Priority", "Created", "Description", "Project", "Assignee")
 
 # columns structure
 COLUMNS = (
@@ -91,6 +93,7 @@ COLUMNS = (
         "name": "Priority",  # 0
         "width": 80,
         "align": "CENTER",
+        "fill_func": fill_priority,
         "values": {  # possible value with it's color
             "Closed": GREY,
             "Low": GREEN,

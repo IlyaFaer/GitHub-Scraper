@@ -63,6 +63,7 @@ class Spreadsheet:
     def __init__(self, config, id_=None):
         self._builders = {}  # list of builders for every sheet
         self._config = config
+        self._columns = []
 
         if not id_:
             # creating new spreadsheet with given sheets list
@@ -122,8 +123,13 @@ class Spreadsheet:
             if tracked_id in raw_new_table:
                 updated_issue = raw_new_table.pop(tracked_id)
                 for col in self._config.TRACKED_FIELDS:
-                    if updated_issue[col] not in (None, "N/A", "Other"):
+                    if updated_issue[col] not in (None, "N/A", "Other", ""):
                         tracked_issues[tracked_id][col] = updated_issue[col]
+
+                    # update column using fill function
+                    self._columns.fill_funcs[col](
+                        tracked_issues[tracked_id], updated_issue
+                    )
             # if there is no such issue in new table, than it was closed
             else:
                 closed_issues.append(tracked_issues[tracked_id].as_list)
@@ -216,7 +222,10 @@ class Spreadsheet:
         """
         for new_id in new_issues.keys():
             tracked_issues[new_id] = new_issues[new_id]
-            tracked_issues[new_id]["Priority"] = "New"
+            for col in self._columns.names:
+                self._columns.fill_funcs[col](
+                    tracked_issues[new_id], new_issues[new_id]
+                )
 
     def _convert_to_rows(self, title_row, table):
         """Convert every list into Row.
@@ -252,8 +261,7 @@ class Spreadsheet:
         self._convert_to_rows(title_row, table)
         sheet_id = self._sheets_ids.get(sheet_name)
 
-        cols_list = [{"name": col} for col in title_row]
-        self._columns = Columns(cols_list, sheet_id)
+        self._columns = Columns(self._config.COLUMNS, sheet_id)
         return build_index(table, title_row)
 
     def _insert_into_sheet(self, sheet_name, rows, start_from):
