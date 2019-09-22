@@ -32,7 +32,7 @@ def get_num_from_url(url):
         url (str): URL or formula for issue.
 
     Returns:
-        (str): issue number.
+        str: issue number.
     """
     match = NUM_REGEX.search(url)
     if match is not None:
@@ -41,3 +41,16 @@ def get_num_from_url(url):
         result = url
 
     return result
+
+
+def build_url_formula(issue):
+    """Build formula with issue's URL.
+
+    Args:
+        issue (github.Issue.Issue): Issue/PR object.
+
+    Returns:
+        str: formula with issue's URL.
+    """
+    url = '=HYPERLINK("{url}";"{num}")'.format(num=issue.number, url=issue.html_url)
+    return url

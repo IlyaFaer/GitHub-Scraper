@@ -5,7 +5,7 @@ tracked fields, etc..
 """
 from const import GREY, GREEN, BLUE, PINK, RED_KRAYOLA, GREEN_GOOD, WHITE, YELLOW
 from utils import get_num_from_url
-from fill_funcs import fill_priority
+import fill_funcs
 
 
 projects_labels = {
@@ -85,7 +85,15 @@ SHEETS = {
 
 # fields, that must be updated on every sheet update
 # other fields will be left unchanged
-TRACKED_FIELDS = ("Priority", "Created", "Description", "Project", "Assignee")
+TRACKED_FIELDS = (
+    "Priority",
+    "Issue",
+    "Work status",
+    "Created",
+    "Description",
+    "Project",
+    "Assignee",
+)
 
 # columns structure
 COLUMNS = (
@@ -93,7 +101,7 @@ COLUMNS = (
         "name": "Priority",  # 0
         "width": 80,
         "align": "CENTER",
-        "fill_func": fill_priority,
+        "fill_func": fill_funcs.fill_priority,
         "values": {  # possible value with it's color
             "Closed": GREY,
             "Low": GREEN,
@@ -104,10 +112,17 @@ COLUMNS = (
             "New": WHITE,
         },
     },
-    {"name": "Issue", "width": 50, "align": "CENTER", "type": "link"},  # 1
+    {
+        "name": "Issue",  # 1
+        "width": 50,
+        "align": "CENTER",
+        "type": "link",
+        "fill_func": fill_funcs.fill_issue,
+    },
     {
         "name": "Work status",  # 2
         "align": "CENTER",
+        "fill_func": fill_funcs.fill_status,
         "values": {
             "Pending": WHITE,
             "In progress": GREEN,
@@ -115,8 +130,17 @@ COLUMNS = (
             "Finished": GREY,
         },
     },
-    {"name": "Created", "align": "CENTER", "type": "date"},  # 3
-    {"name": "Description", "width": 450},  # 4
+    {
+        "name": "Created",  # 3
+        "align": "CENTER",
+        "type": "date",
+        "fill_func": fill_funcs.fill_created,
+    },
+    {
+        "name": "Description",  # 4
+        "width": 450,
+        "fill_func": fill_funcs.fill_description,
+    },
     {"name": "Repository", "align": "CENTER"},  # 5
     {"name": "Project", "align": "CENTER"},  # 6
     {"name": "Assignee", "align": "CENTER"},  # 7

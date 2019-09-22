@@ -1,18 +1,21 @@
 """
-Functions, which fills columns in issues/PRs
-tables. Fill free to redefine.
+Functions, which are used for filling columns in
+a single one row. Fill free to redefine.
+
+Every filling function accepts two args:
+
+old_issue (Row): Dict-like object, which represents
+row, retrieved from a spreadsheet. Redact it's values to
+update row values in spreadsheet.
+
+issue (github.Issue.Issue): Issue object, read from GitHub.
 """
 import datetime
+from utils import build_url_formula
 
 
 def fill_priority(old_issue, issue):
-    """Fill column 'Priority' of a single one issue.
-
-    Args:
-        old_issue (Row): Existing row of a table.
-
-        issue (github.Issue.Issue): Issue object, read from GitHub.
-    """
+    """'Priority' column filling."""
     # new issue
     if old_issue == issue:
         old_issue["Priority"] = "New"
@@ -48,6 +51,30 @@ def fill_priority(old_issue, issue):
         # other projects
         else:
             old_issue["Priority"] = "Low"
+
+
+def fill_issue(old_issue, issue):
+    """'Issue' column filling."""
+    issue = issue["Issue_obj"]
+    old_issue["Issue"] = build_url_formula(issue)
+
+
+def fill_status(old_issue, issue):
+    """'Work status' column filling."""
+    if old_issue == issue:
+        old_issue["Work status"] = "Pending"
+
+
+def fill_created(old_issue, issue):
+    """'Created' column filling."""
+    issue = issue["Issue_obj"]
+    old_issue["Created"] = issue.created_at.strftime("%d %b %Y")
+
+
+def fill_description(old_issue, issue):
+    """'Description' column filling."""
+    issue = issue["Issue_obj"]
+    old_issue["Description"] = issue.title
 
 
 def dont_fill(old_issue, issue):

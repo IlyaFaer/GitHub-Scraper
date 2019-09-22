@@ -3,7 +3,7 @@ Utils for reading data from GitHub and building
 them into structures.
 """
 from github import Github
-from utils import gen_color_request, get_num_from_url
+from utils import gen_color_request, get_num_from_url, build_url_formula
 from const import YELLOW_RAPS, PINK, PURPLE, PATTERNS
 import datetime
 
@@ -55,17 +55,6 @@ class SheetBuilder:
 
         return rows
 
-    def build_url_formula(self, issue):
-        """Build formula with issue's URL.
-
-        Args:
-            issue (github.Issue.Issue): Issue/PR object.
-
-        Returns: issue's link (str).
-        """
-        url = '=HYPERLINK("{url}";"{num}")'.format(num=issue.number, url=issue.html_url)
-        return url
-
     def fill_prs(self, table, closed_issues):
         """Try autodetect connections between PRs and issues.
 
@@ -98,7 +87,7 @@ class SheetBuilder:
                     pull, repo_name = prs_index.pop((num, prefix + issue[5]))
 
                     if pull.number != num:
-                        pr_url = self.build_url_formula(pull)
+                        pr_url = build_url_formula(pull)
                         try:
                             closed_ind = closed_issues.index(issue)
                             closed_issues[closed_ind][num_field] = pr_url
@@ -213,10 +202,7 @@ class SheetBuilder:
         repo_lts = self._repo_names[repo.full_name]
         if issue.pull_request is None:
             row["Issue_obj"] = issue
-            row["Issue"] = self.build_url_formula(issue)
-            row["Work status"] = "Pending"
-            row["Created"] = issue.created_at.strftime("%d %b %Y")
-            row["Description"] = issue.title
+            row["Issue"] = build_url_formula(issue)
             row["Repository"] = repo_lts
             row["Project"] = self._get_project_name(issue.get_labels())
             row["Assignee"] = "N/A"
