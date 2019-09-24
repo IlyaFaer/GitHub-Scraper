@@ -31,9 +31,8 @@ while True:
 
     for sheet_name in config.SHEETS.keys():
         logging.info("updating " + sheet_name)
-        spreadsheet.format_sheet(sheet_name)
-
         try:
+            spreadsheet.format_sheet(sheet_name)
             spreadsheet.update_sheet(sheet_name)
             logging.info("updated")
         except (Exception, socket.timeout):
