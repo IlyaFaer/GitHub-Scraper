@@ -205,12 +205,6 @@ class SheetBuilder:
             row["Issue"] = build_url_formula(issue)
             row["Repository"] = repo_lts
             row["Project"] = self._get_project_name(issue.get_labels())
-            row["Assignee"] = "N/A"
-            assignee = issue.assignee
-            if assignee:
-                row["Assignee"] = (
-                    assignee.login if assignee.login in self._team else "Other"
-                )
         else:
             # add PR into index
             if not (issue.number, repo_lts) in self._prs_index.keys():

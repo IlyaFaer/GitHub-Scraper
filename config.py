@@ -143,7 +143,7 @@ COLUMNS = (
     },
     {"name": "Repository", "align": "CENTER"},  # 5
     {"name": "Project", "align": "CENTER"},  # 6
-    {"name": "Assignee", "align": "CENTER"},  # 7
+    {"name": "Assignee", "align": "CENTER", "fill_func": fill_funcs.fill_assignee},  # 7
     {"name": "Internal PR", "align": "CENTER", "type": "link"},  # 8
     {"name": "Public PR", "align": "CENTER", "type": "link"},  # 9
     {"name": "Task", "align": "CENTER"},  # 10

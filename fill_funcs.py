@@ -9,12 +9,16 @@ row, retrieved from a spreadsheet. Redact it's values to
 update row values in spreadsheet.
 
 issue (github.Issue.Issue): Issue object, read from GitHub.
+
+sheet_name (str): Name of target sheet.
+
+sheet_config (dict): Sheet configurations from config.py.
 """
 import datetime
 from utils import build_url_formula
 
 
-def fill_priority(old_issue, issue):
+def fill_priority(old_issue, issue, sheet_name, sheet_config):
     """'Priority' column filling."""
     # new issue
     if old_issue == issue:
@@ -53,31 +57,45 @@ def fill_priority(old_issue, issue):
             old_issue["Priority"] = "Low"
 
 
-def fill_issue(old_issue, issue):
+def fill_issue(old_issue, issue, sheet_name, sheet_config):
     """'Issue' column filling."""
     issue = issue["Issue_obj"]
     old_issue["Issue"] = build_url_formula(issue)
 
 
-def fill_status(old_issue, issue):
+def fill_status(old_issue, issue, sheet_name, sheet_config):
     """'Work status' column filling."""
     if old_issue == issue:
         old_issue["Work status"] = "Pending"
 
 
-def fill_created(old_issue, issue):
+def fill_created(old_issue, issue, sheet_name, sheet_config):
     """'Created' column filling."""
     issue = issue["Issue_obj"]
     old_issue["Created"] = issue.created_at.strftime("%d %b %Y")
 
 
-def fill_description(old_issue, issue):
+def fill_description(old_issue, issue, sheet_name, sheet_config):
     """'Description' column filling."""
     issue = issue["Issue_obj"]
     old_issue["Description"] = issue.title
 
 
-def dont_fill(old_issue, issue):
+def fill_assignee(old_issue, issue, sheet_name, sheet_config):
+    """'Assignee' column filling."""
+    issue = issue["Issue_obj"]
+
+    assignee = issue.assignee
+    if old_issue["Assignee"] not in sheet_config["team"]:
+        if assignee:
+            old_issue["Assignee"] = (
+                assignee.login if assignee.login in sheet_config["team"] else "Other"
+            )
+        else:
+            old_issue["Assignee"] = "N/A"
+
+
+def dont_fill(old_issue, issue, sheet_name, sheet_config):
     """
     Dummy fill function, default for
     columns with no 'fill_func' field.

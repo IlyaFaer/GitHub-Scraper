@@ -128,13 +128,16 @@ class Spreadsheet:
 
                     # update column using fill function
                     self._columns.fill_funcs[col](
-                        tracked_issues[tracked_id], updated_issue
+                        tracked_issues[tracked_id],
+                        updated_issue,
+                        sheet_name,
+                        self._config.SHEETS[sheet_name],
                     )
             # if there is no such issue in new table, than it was closed
             else:
                 closed_issues.append(tracked_issues[tracked_id].as_list)
 
-        self._insert_new_issues(tracked_issues, raw_new_table)
+        self._insert_new_issues(tracked_issues, raw_new_table, sheet_name)
         new_table = self._rows_to_lists(tracked_issues.values())
 
         requests = builder.fill_prs(new_table, closed_issues)
@@ -213,7 +216,7 @@ class Spreadsheet:
             )
         return self._builders[sheet_name]
 
-    def _insert_new_issues(self, tracked_issues, new_issues):
+    def _insert_new_issues(self, tracked_issues, new_issues, sheet_name):
         """Insert new issues into tracked issues index.
 
         Args:
@@ -224,7 +227,10 @@ class Spreadsheet:
             tracked_issues[new_id] = new_issues[new_id]
             for col in self._columns.names:
                 self._columns.fill_funcs[col](
-                    tracked_issues[new_id], new_issues[new_id]
+                    tracked_issues[new_id],
+                    new_issues[new_id],
+                    sheet_name,
+                    self._config.SHEETS[sheet_name],
                 )
 
     def _convert_to_rows(self, title_row, table):
