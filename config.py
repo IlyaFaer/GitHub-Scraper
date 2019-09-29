@@ -70,7 +70,7 @@ SHEETS = {
     "Golang": {
         "labels": projects_labels,
         "repo_names": {"googleapis/google-cloud-go": "GCG"},
-        "team": ["IlyaFaer", "AlisskaPie", "andrewelkin", "Other", "N/A"],
+        "team": ["IlyaFaer", "AlisskaPie", "Other", "N/A"],
     },
     # -----------------------------
     "PHP": {
@@ -83,7 +83,7 @@ SHEETS = {
     },
 }
 
-# fields, that must be updated on every sheet update
+# fields, which must be updated on every sheet update
 # other fields will be left unchanged
 TRACKED_FIELDS = (
     "Priority",
@@ -141,8 +141,12 @@ COLUMNS = (
         "width": 450,
         "fill_func": fill_funcs.fill_description,
     },
-    {"name": "Repository", "align": "CENTER"},  # 5
-    {"name": "Project", "align": "CENTER"},  # 6
+    {
+        "name": "Repository",
+        "align": "CENTER",
+        "fill_func": fill_funcs.fill_repository,
+    },  # 5
+    {"name": "Project", "align": "CENTER", "fill_func": fill_funcs.fill_project},  # 6
     {"name": "Assignee", "align": "CENTER", "fill_func": fill_funcs.fill_assignee},  # 7
     {"name": "Internal PR", "align": "CENTER", "type": "link"},  # 8
     {"name": "Public PR", "align": "CENTER", "type": "link"},  # 9

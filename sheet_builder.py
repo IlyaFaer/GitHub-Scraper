@@ -35,10 +35,12 @@ class SheetBuilder:
     def build_table(self):
         """Build list of issues/PRs from given repositories.
 
-        Returns: list of dicts, each of which represents
-            single row.
+        Returns:
+            dict:
+                Index of issue in format:
+                {(issue.number, repo_short_name): github.Issue.Issue}
         """
-        rows = []
+        issue_index = {}
         for repo_name in self._repo_names.keys():
             repo = self._get_repo(repo_name)
             self._oldest_issue_dates[repo_name] = datetime.datetime(2000, 1, 1)
@@ -49,11 +51,11 @@ class SheetBuilder:
                     issue.created_at, self._oldest_issue_dates[repo_name]
                 )
 
-                row = self._build_issue_dict(issue, repo)
-                if row:
-                    rows.append(row)
+                id_ = self._build_issue_dict(issue, repo)
+                if id_:
+                    issue_index[id_] = issue
 
-        return rows
+        return issue_index
 
     def fill_prs(self, table, closed_issues):
         """Try autodetect connections between PRs and issues.
@@ -187,24 +189,21 @@ class SheetBuilder:
                 self._add_into_index(repo, repo_lts, (pull, repo_lts), key_phrase)
 
     def _build_issue_dict(self, issue, repo):
-        """
-        Build dict filled with issue data.
-        If issue is PR, add it into index.
+        """Designate issue's id. If issue is PR, index it.
 
         Args:
             issue (github.Issue.Issue): Issue object.
 
             repo (github.Repository.Repository): Repository object.
 
-        Returns: dict representation of single row.
+        Returns:
+            tuple: issue's number and repo short name.
         """
-        row = {}
+        id_ = ()
         repo_lts = self._repo_names[repo.full_name]
+
         if issue.pull_request is None:
-            row["Issue_obj"] = issue
-            row["Issue"] = build_url_formula(issue)
-            row["Repository"] = repo_lts
-            row["Project"] = self._get_project_name(issue.get_labels())
+            id_ = (str(issue.number), repo_lts)
         else:
             # add PR into index
             if not (issue.number, repo_lts) in self._prs_index.keys():
@@ -213,19 +212,7 @@ class SheetBuilder:
                     self._add_into_index(
                         repo, repo_lts, (issue.as_pull_request(), repo_lts), key_phrase
                     )
-        return row
-
-    def _get_project_name(self, labels):
-        """Designate project name by issue labels."""
-        issue_labels = set()
-
-        for label in labels:
-            if "api:" in label.name:
-                label = self._labels.get(label.name, "Other")
-                issue_labels.add(label)
-
-        issue_labels = sorted(list(issue_labels))
-        return ", ".join(issue_labels)
+        return id_
 
     def _try_match_keywords(self, body):
         """Try to find keywords in issue's body.
