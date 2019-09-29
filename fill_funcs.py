@@ -2,7 +2,7 @@
 Functions, which are used for filling columns in
 a single one row. Fill free to redefine.
 
-Every filling function accepts two args:
+Every filling function accepts:
 
 old_issue (Row): Dict-like object, which represents
 row, retrieved from a spreadsheet. Redact it's values to
@@ -22,7 +22,6 @@ from utils import build_url_formula
 
 def fill_priority(old_issue, issue, sheet_name, sheet_config, is_new):
     """'Priority' column filling."""
-    # new issue
     if is_new:
         old_issue["Priority"] = "New"
         return
@@ -60,7 +59,8 @@ def fill_priority(old_issue, issue, sheet_name, sheet_config, is_new):
 
 def fill_issue(old_issue, issue, sheet_name, sheet_config, is_new):
     """'Issue' column filling."""
-    old_issue["Issue"] = build_url_formula(issue)
+    if is_new:
+        old_issue["Issue"] = build_url_formula(issue)
 
 
 def fill_status(old_issue, issue, sheet_name, sheet_config, is_new):

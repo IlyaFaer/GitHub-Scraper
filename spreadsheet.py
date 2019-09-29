@@ -208,9 +208,8 @@ class Spreadsheet:
         """
         if sheet_name not in self._builders:
             sheet_id = self._sheets_ids.get(sheet_name)
-            self._builders[sheet_name] = sheet_builder.SheetBuilder(
-                sheet_name, sheet_id
-            )
+            self._builders[sheet_name] = sheet_builder.SheetBuilder(sheet_id)
+
         return self._builders[sheet_name]
 
     def _insert_new_issues(self, tracked_issues, new_issues, sheet_name):

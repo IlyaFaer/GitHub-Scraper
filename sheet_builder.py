@@ -18,8 +18,7 @@ gh_client = Github(login, password)
 class SheetBuilder:
     """Class that builds table of issues/PRs from specified repos."""
 
-    def __init__(self, sheet_name, sheet_id):
-        self._labels = {}
+    def __init__(self, sheet_id):
         self._repos = {}
         self._repo_names = {}
         self._repo_names_inverse = {}
@@ -28,8 +27,6 @@ class SheetBuilder:
         # since this date we're looking for PRs
         self._oldest_issue_dates = {}
         self._team = []
-
-        self._sheet_name = sheet_name
         self._sheet_id = sheet_id
 
     def build_table(self):
@@ -117,7 +114,6 @@ class SheetBuilder:
         self._internal_prs_index = {}
         self._oldest_issue_dates = {}
 
-        self._labels = config["labels"]
         self._repo_names = config["repo_names"]
         self._repo_names_inverse = dict((v, k) for k, v in self._repo_names.items())
         self._team = config["team"]

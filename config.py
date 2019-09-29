@@ -1,5 +1,5 @@
 """
-File that describes spreadsheet's architecture, including
+File describes spreadsheet's architecture, including
 columns style, data validation, tracked repositories,
 tracked fields, etc..
 """
@@ -26,7 +26,7 @@ UPDATE_PERIODICITY = 3600  # duration of pause between updates
 SHEETS = {
     # -----------------------------
     "Python": {  # sheet name
-        "labels": projects_labels,
+        "labels": projects_labels,  # meaningful labels
         "repo_names": {  # repos to track
             "googleapis/google-cloud-python": "GCP",
             "googleapis/google-resumable-media-python": "GRMP",
@@ -102,7 +102,7 @@ COLUMNS = (
         "width": 80,
         "align": "CENTER",
         "fill_func": fill_funcs.fill_priority,
-        "values": {  # possible value with it's color
+        "values": {  # possible values with their color
             "Closed": GREY,
             "Low": GREEN,
             "Medium": BLUE,
@@ -157,7 +157,7 @@ COLUMNS = (
 
 
 def sort_func(row):
-    """Function that sorts data in the sheet.
+    """Function sorts data in the sheet.
 
     Args:
         row (dict): Dict representation of single row.
