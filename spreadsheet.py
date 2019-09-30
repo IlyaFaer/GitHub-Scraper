@@ -110,11 +110,10 @@ class Spreadsheet:
         # build new table from repositories
         builder = self._get_sheet_builder(sheet_name)
         builder.update_config(self._config.SHEETS[sheet_name])
-        issues_list = builder.build_table()
+        raw_new_table = builder.build_table()
 
         # read existing data from sheet
         tracked_issues = self._read_sheet(sheet_name)
-        raw_new_table = build_index(issues_list, self._columns.names[:10])
 
         # merging new and old tables
         for tracked_id in tracked_issues.keys():
@@ -123,18 +122,19 @@ class Spreadsheet:
             if tracked_id in raw_new_table:
                 updated_issue = raw_new_table.pop(tracked_id)
                 for col in self._config.TRACKED_FIELDS:
-                    if updated_issue[col] not in (None, "N/A", "Other", ""):
-                        tracked_issues[tracked_id][col] = updated_issue[col]
-
                     # update column using fill function
                     self._columns.fill_funcs[col](
-                        tracked_issues[tracked_id], updated_issue
+                        tracked_issues[tracked_id],
+                        updated_issue,
+                        sheet_name,
+                        self._config.SHEETS[sheet_name],
+                        False,
                     )
             # if there is no such issue in new table, than it was closed
             else:
                 closed_issues.append(tracked_issues[tracked_id].as_list)
 
-        self._insert_new_issues(tracked_issues, raw_new_table)
+        self._insert_new_issues(tracked_issues, raw_new_table, sheet_name)
         new_table = self._rows_to_lists(tracked_issues.values())
 
         requests = builder.fill_prs(new_table, closed_issues)
@@ -208,12 +208,11 @@ class Spreadsheet:
         """
         if sheet_name not in self._builders:
             sheet_id = self._sheets_ids.get(sheet_name)
-            self._builders[sheet_name] = sheet_builder.SheetBuilder(
-                sheet_name, sheet_id
-            )
+            self._builders[sheet_name] = sheet_builder.SheetBuilder(sheet_id)
+
         return self._builders[sheet_name]
 
-    def _insert_new_issues(self, tracked_issues, new_issues):
+    def _insert_new_issues(self, tracked_issues, new_issues, sheet_name):
         """Insert new issues into tracked issues index.
 
         Args:
@@ -221,10 +220,14 @@ class Spreadsheet:
             new_issues (dict): Index with only recently created issues.
         """
         for new_id in new_issues.keys():
-            tracked_issues[new_id] = new_issues[new_id]
+            tracked_issues[new_id] = Row(self._columns.names)
             for col in self._columns.names:
                 self._columns.fill_funcs[col](
-                    tracked_issues[new_id], new_issues[new_id]
+                    tracked_issues[new_id],
+                    new_issues[new_id],
+                    sheet_name,
+                    self._config.SHEETS[sheet_name],
+                    True,
                 )
 
     def _convert_to_rows(self, title_row, table):

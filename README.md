@@ -1,4 +1,4 @@
-# Github-Scraper
+# Github-Scraper (alpha)
 
 Github-Scraper automatically builds issues and PRs tables in Google Sheets documents, and periodically updates their data.
 
@@ -6,23 +6,24 @@ Github-Scraper automatically builds issues and PRs tables in Google Sheets docum
 
 **Setup**  
 To build your first tables and start tracking repositories you need:
-* Steps 1 and 2 of [Google Sheets Setup](https://developers.google.com/sheets/api/quickstart/python). On a first run you'll have to authenticate in Google Sheets API.
-* Install [PyGitHub package](https://pygithub.readthedocs.io/en/latest/introduction.html).
-* Create *loginpas.txt* file in scraper's folder and enter your GitHub login and password into it in format: `login/password`. No whitespaces or newlines needed.
-* Set your tables configurations in *config.py* file.
-* Run *main.py* - scraper will build tables and start tracking specified repositories.
+* Steps 1 and 2 of [Google Sheets Setup](https://developers.google.com/sheets/api/quickstart/python)
+* Install [PyGitHub package](https://pygithub.readthedocs.io/en/latest/introduction.html)
+* Create *loginpas.txt* file in scraper's folder and enter your GitHub login and password into it in format: `login/password`. No whitespaces or newlines needed
+* Set your tables configurations in *config.py* file (or use standard)
+* Set filling functions in *fill_funcs.py* file (or use standard)
+* Run *main.py* - scraper will build tables and start tracking specified repositories
 
-**Attention!**  
-Do not change table architecture manually without updating scraper code! Columns, which intended for manual filing: Priority, Work status, Task, Opened, Comment. Do not redact any other values!  
+**Auto and manual filling**  
+You can tweak spreadsheet filling by (re-)defining filling functions in *fill_funcs.py* file, leaving some columns for manual-only filling (for example "Comment").
 
 **Configurations**  
 Scraper uses *config.py* file as a source of preferences. Before update it reloads *config.py* module, so you can change table's preferences without stoping scraper's main program. Configurations are set with several constants:
 * TITLE - spreadsheet name
 * UPDATE_PERIODICITY - duration of pause between updates in seconds
-* SHEETS - spreadsheet preferences: list of sheets with their names, meaningful labels, lists of corresponding repositories and team list
+* SHEETS - spreadsheet preferences: list of sheets with their names, meaningful labels, lists of corresponding repositories and team lists
 * TRACKED_FIELDS - names of columns, that should be rewriten on every update
-* COLUMNS - column preferences. In this structure you can set column name, width, data aligning and data validation (with corresponding color for some values)
-* sort_func - function, which is used by scraper for sorting issues in sheet  
+* COLUMNS - in this structure you can set column name, style, data validation (with corresponding color for some values) and filling function
+* sort_func - function, which is used for sorting issues within sheet  
 
 **Updating**  
 At specified intervals scraper makes request to GitHub to get issues/PRs list. If new issues have been created, scraper will add them into the table with *Priority* 'New'. If some issues have been closed, scraper will make their number grey.  
