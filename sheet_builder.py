@@ -48,7 +48,7 @@ class SheetBuilder:
                     issue.created_at, self._oldest_issue_dates[repo_name]
                 )
 
-                id_ = self._build_issue_dict(issue, repo)
+                id_ = self._build_issues_id(issue, repo)
                 if id_:
                     issue_index[id_] = issue
 
@@ -184,7 +184,7 @@ class SheetBuilder:
             for key_phrase in key_phrases:
                 self._add_into_index(repo, repo_lts, (pull, repo_lts), key_phrase)
 
-    def _build_issue_dict(self, issue, repo):
+    def _build_issues_id(self, issue, repo):
         """Designate issue's id. If issue is PR, index it.
 
         Args:
