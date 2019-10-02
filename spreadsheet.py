@@ -118,10 +118,10 @@ class Spreadsheet:
         # merging new and old tables
         for tracked_id in tracked_issues.keys():
 
-            # updating tracked columns
+            # updating columns
             if tracked_id in raw_new_table:
                 updated_issue = raw_new_table.pop(tracked_id)
-                for col in self._config.TRACKED_FIELDS:
+                for col in self._columns.names:
                     # update column using fill function
                     self._columns.fill_funcs[col](
                         tracked_issues[tracked_id],

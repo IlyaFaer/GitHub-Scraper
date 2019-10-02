@@ -83,18 +83,6 @@ SHEETS = {
     },
 }
 
-# fields, which must be updated on every sheet update
-# other fields will be left unchanged
-TRACKED_FIELDS = (
-    "Priority",
-    "Issue",
-    "Work status",
-    "Created",
-    "Description",
-    "Project",
-    "Assignee",
-)
-
 # columns structure
 COLUMNS = (
     {
