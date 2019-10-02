@@ -1,6 +1,10 @@
-# Github-Scraper (alpha)
+# GitHub-Scraper (alpha)
 
-Github-Scraper automatically builds issues and PRs tables in Google Sheets documents, and periodically updates their data.
+GitHub-Scraper automatically builds issues and PRs tables in Google Sheets documents, and periodically updates them:
+* **Multirepo**: track several repositories within one sheet and several sheets within one spreadsheet
+* **Constructable**: tweak table structure, relations "repository-to-sheet" and filling functions
+* **Adaptive**: change your preferences without restarting the scraper
+* **Ongoing**: continue filling on exceptions - scraper will log traceback into file without failing
 
 ![image](https://cdn1.imggmi.com/uploads/2019/8/31/412b7ab2c12f86916559343125942f7d-full.png)
 
@@ -14,15 +18,14 @@ To build your first tables and start tracking repositories you need:
 * Run *main.py* - scraper will build tables and start tracking specified repositories
 
 **Auto and manual filling**  
-You can tweak spreadsheet filling by (re-)defining filling functions in *fill_funcs.py* file, leaving some columns for manual-only filling (for example "Comment").
+You can tweak spreadsheet filling by (re-)defining filling functions in *fill_funcs.py* file, leaving some columns for manual-only use (for example "Comment").
 
 **Configurations**  
 Scraper uses *config.py* file as a source of preferences. Before update it reloads *config.py* module, so you can change table's preferences without stoping scraper's main program. Configurations are set with several constants:
 * TITLE - spreadsheet name
 * UPDATE_PERIODICITY - duration of pause between updates in seconds
 * SHEETS - spreadsheet preferences: list of sheets with their names, meaningful labels, lists of corresponding repositories and team lists
-* TRACKED_FIELDS - names of columns, that should be rewriten on every update
-* COLUMNS - in this structure you can set column name, style, data validation (with corresponding color for some values) and filling function
+* COLUMNS - column names, style, data validation (with corresponding color for some values) and filling functions
 * sort_func - function, which is used for sorting issues within sheet  
 
 **Updating**  
