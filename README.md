@@ -1,16 +1,16 @@
 # GitHub-Scraper (alpha)
 
-GitHub-Scraper automatically builds issues and PRs tables in Google Sheets documents, and periodically updates them:
+GitHub-Scraper automatically builds issues and PRs tables in Google Sheets documents, and periodically updates them.
 * **Multirepo**: track several repositories within one sheet and several sheets within one spreadsheet
 * **Constructable**: tweak table structure, relations "repository-to-sheet" and filling functions
-* **Adaptive**: change your preferences without restarting the scraper
+* **Adaptive**: change your preferences and add new repos and\or sheets without restarting the scraper
 * **Ongoing**: continue filling on exceptions - scraper will log traceback into file without failing
 
 ![image](https://cdn1.imggmi.com/uploads/2019/8/31/412b7ab2c12f86916559343125942f7d-full.png)
 
 **Setup**  
 To build your first tables and start tracking repositories you need:
-* Steps 1 and 2 of [Google Sheets Setup](https://developers.google.com/sheets/api/quickstart/python)
+* Steps 1 and 2 of [Google Sheets API Setup](https://developers.google.com/sheets/api/quickstart/python)
 * Install [PyGitHub package](https://pygithub.readthedocs.io/en/latest/introduction.html)
 * Create *loginpas.txt* file in scraper's folder and enter your GitHub login and password into it in format: `login/password`. No whitespaces or newlines needed
 * Set your tables configurations in *config.py* file (or use standard)
