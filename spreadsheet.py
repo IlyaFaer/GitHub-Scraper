@@ -26,8 +26,13 @@ class CachedSheetsIds:
 
     def __init__(self, spreadsheet_id):
         self._sheet_ids = {}
+        self._spreadsheet_id = spreadsheet_id
 
-        resp = service.spreadsheets().get(spreadsheetId=spreadsheet_id).execute()
+        self.update()
+
+    def update(self):
+        """Read sheets and save them internally."""
+        resp = service.spreadsheets().get(spreadsheetId=self._spreadsheet_id).execute()
 
         for sheet in resp["sheets"]:
             props = sheet["properties"]
@@ -81,6 +86,47 @@ class Spreadsheet:
 
         self._sheets_ids = CachedSheetsIds(id_)
         self._id = id_
+
+    def update_spreadsheet(self):
+        """Update spreadsheet structure.
+
+        Rename spreadsheet, if name in config.py had been changed.
+        Add new sheets into spreadsheet.
+        """
+        # spreadsheet rename request
+        requests = [
+            {
+                "updateSpreadsheetProperties": {
+                    "properties": {"title": self._config.TITLE},
+                    "fields": "title",
+                }
+            }
+        ]
+
+        self._sheets_ids.update()
+
+        # build requests for new sheets
+        new_sheets = False
+        for sheet_name in self._config.SHEETS.keys():
+            if not self._sheets_ids.get(sheet_name):
+                new_sheets = True
+                requests.append(
+                    {
+                        "addSheet": {
+                            "properties": {
+                                "title": sheet_name,
+                                "gridProperties": {"rowCount": 1000, "columnCount": 26},
+                            }
+                        }
+                    }
+                )
+
+        service.spreadsheets().batchUpdate(
+            spreadsheetId=self._id, body={"requests": requests}
+        ).execute()
+
+        if new_sheets:
+            self._sheets_ids.update()
 
     def format_sheet(self, sheet_name):
         """Update sheet's structure.

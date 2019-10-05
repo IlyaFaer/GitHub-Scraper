@@ -19,7 +19,7 @@ projects_labels = {
     "api: datastore": "Datastore",
 }
 
-TITLE = "QLogic Internal Review"  # spreadsheet title
+TITLE = "QLogic Issue Tracker"  # spreadsheet title
 UPDATE_PERIODICITY = 3600  # duration of pause between updates
 
 # sheets structure

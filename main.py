@@ -28,6 +28,7 @@ spreadsheet = Spreadsheet(config, spreadsheet_id)
 while True:
     importlib.reload(config)
     spreadsheet.reload_config(config)
+    spreadsheet.update_spreadsheet()
 
     for sheet_name in config.SHEETS.keys():
         logging.info("updating " + sheet_name)
