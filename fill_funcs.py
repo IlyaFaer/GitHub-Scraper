@@ -14,13 +14,15 @@ sheet_name (str): Name of target sheet.
 
 sheet_config (dict): Sheet configurations from config.py.
 
+prs (list): List of related pull requests (designated by GitHub keywords).
+
 is_new (bool): New issue in table.
 """
 import datetime
 from utils import build_url_formula
 
 
-def fill_priority(old_issue, issue, sheet_name, sheet_config, is_new):
+def fill_priority(old_issue, issue, sheet_name, sheet_config, prs, is_new):
     """'Priority' column filling."""
     if is_new:
         old_issue["Priority"] = "New"
@@ -62,29 +64,29 @@ def fill_priority(old_issue, issue, sheet_name, sheet_config, is_new):
             old_issue["Priority"] = "Low"
 
 
-def fill_issue(old_issue, issue, sheet_name, sheet_config, is_new):
+def fill_issue(old_issue, issue, sheet_name, sheet_config, prs, is_new):
     """'Issue' column filling."""
     if is_new:
         old_issue["Issue"] = build_url_formula(issue)
 
 
-def fill_status(old_issue, issue, sheet_name, sheet_config, is_new):
+def fill_status(old_issue, issue, sheet_name, sheet_config, prs, is_new):
     """'Work status' column filling."""
     if is_new:
         old_issue["Work status"] = "Pending"
 
 
-def fill_created(old_issue, issue, sheet_name, sheet_config, is_new):
+def fill_created(old_issue, issue, sheet_name, sheet_config, prs, is_new):
     """'Created' column filling."""
     old_issue["Created"] = issue.created_at.strftime("%d %b %Y")
 
 
-def fill_description(old_issue, issue, sheet_name, sheet_config, is_new):
+def fill_description(old_issue, issue, sheet_name, sheet_config, prs, is_new):
     """'Description' column filling."""
     old_issue["Description"] = issue.title
 
 
-def fill_assignee(old_issue, issue, sheet_name, sheet_config, is_new):
+def fill_assignee(old_issue, issue, sheet_name, sheet_config, prs, is_new):
     """'Assignee' column filling."""
     assignee = issue.assignee
     if old_issue["Assignee"] not in sheet_config["team"]:
@@ -96,14 +98,14 @@ def fill_assignee(old_issue, issue, sheet_name, sheet_config, is_new):
             old_issue["Assignee"] = "N/A"
 
 
-def fill_repository(old_issue, issue, sheet_name, sheet_config, is_new):
+def fill_repository(old_issue, issue, sheet_name, sheet_config, prs, is_new):
     """'Repository' column filling."""
     # new issue
     if is_new:
         old_issue["Repository"] = sheet_config["repo_names"][issue.repository.full_name]
 
 
-def fill_project(old_issue, issue, sheet_name, sheet_config, is_new):
+def fill_project(old_issue, issue, sheet_name, sheet_config, prs, is_new):
     """'Project' column filling."""
 
     projects = []
@@ -116,7 +118,7 @@ def fill_project(old_issue, issue, sheet_name, sheet_config, is_new):
     old_issue["Project"] = ", ".join(projects)
 
 
-def dont_fill(old_issue, issue, sheet_name, sheet_config, is_new):
+def dont_fill(old_issue, issue, sheet_name, sheet_config, prs, is_new):
     """
     Dummy fill function, default for
     columns with no 'fill_func' field.

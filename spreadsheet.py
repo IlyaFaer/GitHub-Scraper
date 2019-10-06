@@ -174,6 +174,7 @@ class Spreadsheet:
                         updated_issue,
                         sheet_name,
                         self._config.SHEETS[sheet_name],
+                        builder.prs_index.get(tracked_id) or [],
                         False,
                     )
             # if there is no such issue in new table, than it was closed
@@ -273,6 +274,7 @@ class Spreadsheet:
                     new_issues[new_id],
                     sheet_name,
                     self._config.SHEETS[sheet_name],
+                    self._builders[sheet_name].prs_index.get(new_id) or [],
                     True,
                 )
 

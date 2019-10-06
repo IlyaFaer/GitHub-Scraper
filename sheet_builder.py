@@ -22,8 +22,8 @@ class SheetBuilder:
         self._repos = {}
         self._repo_names = {}
         self._repo_names_inverse = {}
-        self._prs_index = {}
-        self._internal_prs_index = {}
+        self.prs_index = {}
+        self.internal_prs_index = {}
         # since this date we're looking for PRs
         self._oldest_issue_dates = {}
         self._team = []
@@ -78,12 +78,13 @@ class SheetBuilder:
             num = get_num_from_url(issue[1])
 
             for prs_index, num_field, prefix in (
-                (self._prs_index, 9, ""),
-                (self._internal_prs_index, 8, "Q-"),
+                (self.prs_index, 9, ""),
+                (self.internal_prs_index, 8, "Q-"),
             ):
 
                 if (num, prefix + issue[5]) in prs_index.keys():
-                    pull, repo_name = prs_index.pop((num, prefix + issue[5]))
+                    pulls = prs_index.pop((num, prefix + issue[5]))
+                    pull = pulls[0]
 
                     if pull.number != num:
                         pr_url = build_url_formula(pull)
@@ -110,8 +111,8 @@ class SheetBuilder:
         Args:
             config (dict): Dict with sheet's configurations.
         """
-        self._prs_index = {}
-        self._internal_prs_index = {}
+        self.prs_index = {}
+        self.internal_prs_index = {}
         self._oldest_issue_dates = {}
 
         self._repo_names = config["repo_names"]
@@ -156,13 +157,17 @@ class SheetBuilder:
         # internal PR
         if repo.full_name.startswith("q-logic/"):
             issue_num = key_exp.split()[1]
-            if not (issue_num, repo_lts) in self._internal_prs_index:
-                self._internal_prs_index[issue_num, repo_lts] = lpr
+            if not (issue_num, repo_lts) in self.internal_prs_index:
+                self.internal_prs_index[issue_num, repo_lts] = []
+
+            self.internal_prs_index[issue_num, repo_lts].append(lpr)
         # public PR
         else:
             issue_num = key_exp.split("#")[1]
-            if not (issue_num, repo_lts) in self._prs_index:
-                self._prs_index[issue_num, repo_lts] = lpr
+            if not (issue_num, repo_lts) in self.prs_index:
+                self.prs_index[issue_num, repo_lts] = []
+
+            self.prs_index[issue_num, repo_lts].append(lpr)
 
     def _index_closed_prs(self, repo, since_date):
         """Add to PRs index closed pull requests.
@@ -182,7 +187,7 @@ class SheetBuilder:
         for pull in pulls:
             key_phrases = self._try_match_keywords(pull.body)
             for key_phrase in key_phrases:
-                self._add_into_index(repo, repo_lts, (pull, repo_lts), key_phrase)
+                self._add_into_index(repo, repo_lts, pull, key_phrase)
 
     def _build_issues_id(self, issue, repo):
         """Designate issue's id. If issue is PR, index it.
@@ -202,12 +207,11 @@ class SheetBuilder:
             id_ = (str(issue.number), repo_lts)
         else:
             # add PR into index
-            if not (issue.number, repo_lts) in self._prs_index.keys():
-                key_phrases = self._try_match_keywords(issue.body)
-                for key_phrase in key_phrases:
-                    self._add_into_index(
-                        repo, repo_lts, (issue.as_pull_request(), repo_lts), key_phrase
-                    )
+            key_phrases = self._try_match_keywords(issue.body)
+            for key_phrase in key_phrases:
+                self._add_into_index(
+                    repo, repo_lts, issue.as_pull_request(), key_phrase
+                )
         return id_
 
     def _try_match_keywords(self, body):
