@@ -89,7 +89,10 @@ def fill_description(old_issue, issue, sheet_name, sheet_config, prs, is_new):
 def fill_assignee(old_issue, issue, sheet_name, sheet_config, prs, is_new):
     """'Assignee' column filling."""
     assignee = issue.assignee
-    if old_issue["Assignee"] not in sheet_config["team"]:
+    if (
+        old_issue["Assignee"] not in sheet_config["team"]
+        and old_issue["Assignee"] != "N/A"
+    ):
         if assignee:
             old_issue["Assignee"] = (
                 assignee.login if assignee.login in sheet_config["team"] else "Other"
