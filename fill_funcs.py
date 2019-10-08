@@ -110,13 +110,13 @@ def fill_repository(old_issue, issue, sheet_name, sheet_config, prs, is_new):
 
 def fill_project(old_issue, issue, sheet_name, sheet_config, prs, is_new):
     """'Project' column filling."""
-
-    projects = []
+    projects = set()
     for label in issue.labels:
         if "api:" in label.name:
             project = sheet_config["labels"].get(label.name, "Other")
-            projects.append(project)
+            projects.add(project)
 
+    projects = list(projects)
     projects.sort()
     old_issue["Project"] = ", ".join(projects)
 

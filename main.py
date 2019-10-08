@@ -28,7 +28,10 @@ spreadsheet = Spreadsheet(config, spreadsheet_id)
 while True:
     importlib.reload(config)
     spreadsheet.reload_config(config)
-    spreadsheet.update_spreadsheet()
+    try:
+        spreadsheet.update_spreadsheet()
+    except (Exception, socket.timeout):
+        logging.exception("Exception occured:")
 
     for sheet_name in config.SHEETS.keys():
         logging.info("updating " + sheet_name)
