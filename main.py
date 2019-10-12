@@ -29,14 +29,15 @@ while True:
     importlib.reload(config)
     spreadsheet.reload_config(config)
     try:
+        logging.info("updating spreadsheet")
         spreadsheet.update_spreadsheet()
+        logging.info("updated")
     except (Exception, socket.timeout):
         logging.exception("Exception occured:")
 
     for sheet_name in config.SHEETS.keys():
         logging.info("updating " + sheet_name)
         try:
-            spreadsheet.format_sheet(sheet_name)
             spreadsheet.update_sheet(sheet_name)
             logging.info("updated")
         except (Exception, socket.timeout):

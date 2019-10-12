@@ -128,7 +128,7 @@ class Spreadsheet:
         if new_sheets:
             self._sheets_ids.update()
 
-    def format_sheet(self, sheet_name):
+    def _format_sheet(self, sheet_name):
         """Update sheet's structure.
 
         Create title row in specified sheet, format columns
@@ -185,6 +185,7 @@ class Spreadsheet:
         new_table = self._rows_to_lists(tracked_issues.values())
 
         requests = builder.fill_prs(new_table, closed_issues)
+        self._format_sheet(sheet_name)
         self._insert_into_sheet(sheet_name, new_table, "A2")
 
         requests += self._gen_closed_requests(closed_issues, new_table, sheet_name)
@@ -304,8 +305,22 @@ class Spreadsheet:
             service.spreadsheets()
             .values()
             .get(spreadsheetId=self._id, range=sheet_name, valueRenderOption="FORMULA")
-            .execute()["values"]
+            .execute()
+            .get("values")
         )
+
+        if table is None:
+            self._format_sheet(sheet_name)
+            table = (
+                service.spreadsheets()
+                .values()
+                .get(
+                    spreadsheetId=self._id,
+                    range=sheet_name,
+                    valueRenderOption="FORMULA",
+                )
+                .execute()["values"]
+            )
 
         title_row, table = table[0], table[1:]
 
