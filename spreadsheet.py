@@ -128,23 +128,6 @@ class Spreadsheet:
         if new_sheets:
             self._sheets_ids.update()
 
-    def _format_sheet(self, sheet_name):
-        """Update sheet's structure.
-
-        Create title row in specified sheet, format columns
-        and add data validation according to config module.
-
-        Args:
-            sheet_name (str): Name of sheet which must be formatted.
-        """
-        # set validation for team members
-        self._config.COLUMNS[7]["values"] = self._config.SHEETS[sheet_name]["team"]
-
-        self._columns = Columns(self._config.COLUMNS, self._sheets_ids.get(sheet_name))
-
-        self._insert_into_sheet(sheet_name, [self._columns.names], "A1")
-        self._apply_formating_data(self._columns.requests)
-
     def update_sheet(self, sheet_name):
         """Update specified sheet with issues/PRs data.
 
@@ -179,6 +162,19 @@ class Spreadsheet:
                     )
             # if there is no such issue in new table, than it was closed
             else:
+                updated_issue = builder.read_issue(*tracked_id)
+                if updated_issue:
+                    for col in self._columns.names:
+                        # update column using fill function
+                        self._columns.fill_funcs[col](
+                            tracked_issues[tracked_id],
+                            updated_issue,
+                            sheet_name,
+                            self._config.SHEETS[sheet_name],
+                            builder.prs_index.get(tracked_id) or [],
+                            False,
+                        )
+
                 closed_issues.append(tracked_issues[tracked_id].as_list)
 
         self._insert_new_issues(tracked_issues, raw_new_table, sheet_name)
@@ -200,6 +196,23 @@ class Spreadsheet:
                 preferences.
         """
         self._config = config
+
+    def _format_sheet(self, sheet_name):
+        """Update sheet's structure.
+
+        Create title row in specified sheet, format columns
+        and add data validation according to config module.
+
+        Args:
+            sheet_name (str): Name of sheet which must be formatted.
+        """
+        # set validation for team members
+        self._config.COLUMNS[7]["values"] = self._config.SHEETS[sheet_name]["team"]
+
+        self._columns = Columns(self._config.COLUMNS, self._sheets_ids.get(sheet_name))
+
+        self._insert_into_sheet(sheet_name, [self._columns.names], "A1")
+        self._apply_formating_data(self._columns.requests)
 
     def _rows_to_lists(self, tracked_issues):
         """Convert every Row into list before sending into spreadsheet.

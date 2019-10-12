@@ -33,35 +33,35 @@ def fill_priority(old_issue, issue, sheet_name, sheet_config, prs, is_new):
     # auto designate it's priority
     labels = [label.name for label in issue.labels]
 
-    if old_issue["Priority"] == "New":
-        if date_diff.days > 3:
-            our_labels = []
-
-            for our_label in (
-                "api: storage",
-                "api: spanner",
-                "api: firestore",
-                "api: datastore",
-                "api: bigtable",
-                "api: pubsub",
-                "api: core",
-            ):
-                if our_label in labels:
-                    our_labels.append(our_label)
-
-            if our_labels:
-                # bugs in our projects have high priority
-                if "type: bug" in labels:
-                    old_issue["Priority"] = "High"
-                # other issues
-                else:
-                    old_issue["Priority"] = "Medium"
-            # other projects
-            else:
-                old_issue["Priority"] = "Low"
-    else:
+    if old_issue["Priority"] not in ("Closed", "Done"):
         if "backend" in labels:
             old_issue["Priority"] = "Low"
+        elif old_issue["Priority"] == "New":
+            if date_diff.days > 3:
+                our_labels = []
+
+                for our_label in (
+                    "api: storage",
+                    "api: spanner",
+                    "api: firestore",
+                    "api: datastore",
+                    "api: bigtable",
+                    "api: pubsub",
+                    "api: core",
+                ):
+                    if our_label in labels:
+                        our_labels.append(our_label)
+
+                if our_labels:
+                    # bugs in our projects have high priority
+                    if "type: bug" in labels:
+                        old_issue["Priority"] = "High"
+                    # other issues
+                    else:
+                        old_issue["Priority"] = "Medium"
+                # other projects
+                else:
+                    old_issue["Priority"] = "Low"
 
 
 def fill_issue(old_issue, issue, sheet_name, sheet_config, prs, is_new):

@@ -105,6 +105,23 @@ class SheetBuilder:
                             )
         return requests
 
+    def read_issue(self, issue_num, repo_lts):
+        """Read issue by it's number and repository short name.
+
+        Args:
+            issue_num (str): Number of issue.
+            repo_lst (str): Repository short name.
+
+        Returns:
+            github.Issue.Issue: issue object from GitHub.
+        """
+        repo_name = self._repo_names_inverse.get(repo_lts)
+        if repo_name is None:
+            return
+
+        repo = self._repos.get(repo_name)
+        return repo.get_issue(int(issue_num))
+
     def update_config(self, config):
         """Update builder's configurations.
 
