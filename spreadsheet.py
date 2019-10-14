@@ -146,6 +146,8 @@ class Spreadsheet:
 
         # merging new and old tables
         for tracked_id in tracked_issues.keys():
+            prs = builder.prs_index.get(tracked_id) or []
+            prs.sort(key=sheet_builder.sort_pull_requests, reverse=True)
 
             # updating columns
             if tracked_id in raw_new_table:
@@ -157,7 +159,7 @@ class Spreadsheet:
                         updated_issue,
                         sheet_name,
                         self._config.SHEETS[sheet_name],
-                        builder.prs_index.get(tracked_id) or [],
+                        prs,
                         False,
                     )
             # if there is no such issue in new table, than it was closed
@@ -171,7 +173,7 @@ class Spreadsheet:
                             updated_issue,
                             sheet_name,
                             self._config.SHEETS[sheet_name],
-                            builder.prs_index.get(tracked_id) or [],
+                            prs,
                             False,
                         )
 
@@ -282,13 +284,16 @@ class Spreadsheet:
         """
         for new_id in new_issues.keys():
             tracked_issues[new_id] = Row(self._columns.names)
+            prs = self._builders[sheet_name].prs_index.get(new_id) or []
+            prs.sort(key=sheet_builder.sort_pull_requests, reverse=True)
+
             for col in self._columns.names:
                 self._columns.fill_funcs[col](
                     tracked_issues[new_id],
                     new_issues[new_id],
                     sheet_name,
                     self._config.SHEETS[sheet_name],
-                    self._builders[sheet_name].prs_index.get(new_id) or [],
+                    prs,
                     True,
                 )
 

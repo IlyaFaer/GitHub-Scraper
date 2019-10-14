@@ -5,7 +5,6 @@ them into structures.
 from github import Github
 from utils import gen_color_request, get_num_from_url, build_url_formula
 from const import YELLOW_RAPS, PINK, PURPLE, PATTERNS
-import datetime
 
 
 # authenticate in GitHub
@@ -24,8 +23,6 @@ class SheetBuilder:
         self._repo_names_inverse = {}
         self.prs_index = {}
         self.internal_prs_index = {}
-        # since this date we're looking for PRs
-        self._oldest_issue_dates = {}
         self._team = []
         self._sheet_id = sheet_id
 
@@ -40,14 +37,10 @@ class SheetBuilder:
         issue_index = {}
         for repo_name in self._repo_names.keys():
             repo = self._get_repo(repo_name)
-            self._oldest_issue_dates[repo_name] = datetime.datetime(2000, 1, 1)
+            self._index_closed_prs(repo)
 
             # process open PRs and issues
             for issue in repo.get_issues():
-                self._oldest_issue_dates[repo_name] = min(
-                    issue.created_at, self._oldest_issue_dates[repo_name]
-                )
-
                 id_ = self._build_issues_id(issue, repo)
                 if id_:
                     issue_index[id_] = issue
@@ -69,11 +62,6 @@ class SheetBuilder:
         """
         requests = []
 
-        for repo_name in self._repo_names.keys():
-            self._index_closed_prs(
-                self._get_repo(repo_name), self._oldest_issue_dates[repo_name]
-            )
-
         for index, issue in enumerate(table):
             num = get_num_from_url(issue[1])
 
@@ -90,11 +78,13 @@ class SheetBuilder:
                         pr_url = build_url_formula(pull)
                         try:
                             closed_ind = closed_issues.index(issue)
-                            closed_issues[closed_ind][num_field] = pr_url
+                            if num_field != 9:
+                                closed_issues[closed_ind][num_field] = pr_url
                         except ValueError:
                             pass
 
-                        issue[num_field] = pr_url
+                        if num_field != 9:
+                            issue[num_field] = pr_url
 
                         color = self._designate_status_color(pull)
                         if color:
@@ -130,7 +120,6 @@ class SheetBuilder:
         """
         self.prs_index = {}
         self.internal_prs_index = {}
-        self._oldest_issue_dates = {}
 
         self._repo_names = config["repo_names"]
         self._repo_names_inverse = dict((v, k) for k, v in self._repo_names.items())
@@ -186,17 +175,12 @@ class SheetBuilder:
 
             self.prs_index[issue_num, repo_lts].append(lpr)
 
-    def _index_closed_prs(self, repo, since_date):
+    def _index_closed_prs(self, repo):
         """Add to PRs index closed pull requests.
 
         Args:
             repo (github.Repository.Repository):
                 Repository object.
-
-            since_data (datetime.datetime):
-                Date of the oldest tracked issue. PRs
-                which was created before this date, are
-                meaningless.
         """
         pulls = repo.get_pulls(state="closed", sort="created", direction="desc")
 
@@ -263,3 +247,8 @@ class SheetBuilder:
             status = YELLOW_RAPS
 
         return status
+
+
+def sort_pull_requests(pull_request):
+    """Sort pull requests by their creation date."""
+    return pull_request.created_at

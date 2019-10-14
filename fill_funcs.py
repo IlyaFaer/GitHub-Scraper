@@ -15,6 +15,7 @@ sheet_name (str): Name of target sheet.
 sheet_config (dict): Sheet configurations from config.py.
 
 prs (list): List of related pull requests (designated by GitHub keywords).
+Pull requests are sorted by creation date (DESC).
 
 is_new (bool): New issue in table.
 """
@@ -119,6 +120,12 @@ def fill_project(old_issue, issue, sheet_name, sheet_config, prs, is_new):
     projects = list(projects)
     projects.sort()
     old_issue["Project"] = ", ".join(projects)
+
+
+def fill_ppr(old_issue, issue, sheet_name, sheet_config, prs, is_new):
+    """'Public PR' column filling."""
+    if prs:
+        old_issue["Public PR"] = build_url_formula(prs[0])
 
 
 def dont_fill(old_issue, issue, sheet_name, sheet_config, prs, is_new):
