@@ -14,7 +14,8 @@ sheet_name (str): Name of target sheet.
 
 sheet_config (dict): Sheet configurations from config.py.
 
-prs (list): List of related pull requests (designated by GitHub keywords).
+prs (dict): Lists of related internal and public
+pull requests (designated by GitHub keywords).
 Pull requests are sorted by creation date (DESC).
 
 is_new (bool): New issue in table.
@@ -124,8 +125,14 @@ def fill_project(old_issue, issue, sheet_name, sheet_config, prs, is_new):
 
 def fill_ppr(old_issue, issue, sheet_name, sheet_config, prs, is_new):
     """'Public PR' column filling."""
-    if prs:
-        old_issue["Public PR"] = build_url_formula(prs[0])
+    if prs["public"]:
+        old_issue["Public PR"] = build_url_formula(prs["public"][0])
+
+
+def fill_ipr(old_issue, issue, sheet_name, sheet_config, prs, is_new):
+    """'Internal PR' column filling."""
+    if prs["internal"]:
+        old_issue["Internal PR"] = build_url_formula(prs["internal"][0])
 
 
 def dont_fill(old_issue, issue, sheet_name, sheet_config, prs, is_new):

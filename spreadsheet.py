@@ -146,43 +146,30 @@ class Spreadsheet:
 
         # merging new and old tables
         for tracked_id in tracked_issues.keys():
-            prs = builder.prs_index.get(tracked_id) or []
-            prs.sort(key=sheet_builder.sort_pull_requests, reverse=True)
-
-            # updating columns
             if tracked_id in raw_new_table:
                 updated_issue = raw_new_table.pop(tracked_id)
-                for col in self._columns.names:
-                    # update column using fill function
-                    self._columns.fill_funcs[col](
-                        tracked_issues[tracked_id],
-                        updated_issue,
-                        sheet_name,
-                        self._config.SHEETS[sheet_name],
-                        prs,
-                        False,
-                    )
-            # if there is no such issue in new table, than it was closed
             else:
                 updated_issue = builder.read_issue(*tracked_id)
-                if updated_issue:
-                    for col in self._columns.names:
-                        # update column using fill function
-                        self._columns.fill_funcs[col](
-                            tracked_issues[tracked_id],
-                            updated_issue,
-                            sheet_name,
-                            self._config.SHEETS[sheet_name],
-                            prs,
-                            False,
-                        )
-
                 closed_issues.append(tracked_issues[tracked_id].as_list)
+
+                if not updated_issue:
+                    continue
+
+            # update columns using fill function
+            for col in self._columns.names:
+                self._columns.fill_funcs[col](
+                    tracked_issues[tracked_id],
+                    updated_issue,
+                    sheet_name,
+                    self._config.SHEETS[sheet_name],
+                    builder.get_prs(tracked_id),
+                    False,
+                )
 
         self._insert_new_issues(tracked_issues, raw_new_table, sheet_name)
         new_table = self._rows_to_lists(tracked_issues.values())
 
-        requests = builder.fill_prs(new_table, closed_issues)
+        requests = builder.fill_prs(new_table)
         self._format_sheet(sheet_name)
         self._insert_into_sheet(sheet_name, new_table, "A2")
 
@@ -284,8 +271,7 @@ class Spreadsheet:
         """
         for new_id in new_issues.keys():
             tracked_issues[new_id] = Row(self._columns.names)
-            prs = self._builders[sheet_name].prs_index.get(new_id) or []
-            prs.sort(key=sheet_builder.sort_pull_requests, reverse=True)
+            prs = self._builders[sheet_name].get_prs(new_id)
 
             for col in self._columns.names:
                 self._columns.fill_funcs[col](

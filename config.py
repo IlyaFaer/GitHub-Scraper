@@ -136,7 +136,12 @@ COLUMNS = (
     },  # 5
     {"name": "Project", "align": "CENTER", "fill_func": fill_funcs.fill_project},  # 6
     {"name": "Assignee", "align": "CENTER", "fill_func": fill_funcs.fill_assignee},  # 7
-    {"name": "Internal PR", "align": "CENTER", "type": "link"},  # 8
+    {
+        "name": "Internal PR",
+        "align": "CENTER",
+        "type": "link",
+        "fill_func": fill_funcs.fill_ipr,
+    },  # 8
     {
         "name": "Public PR",
         "align": "CENTER",

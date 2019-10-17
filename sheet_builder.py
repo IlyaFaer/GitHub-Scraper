@@ -3,7 +3,7 @@ Utils for reading data from GitHub and building
 them into structures.
 """
 from github import Github
-from utils import gen_color_request, get_num_from_url, build_url_formula
+from utils import gen_color_request, get_num_from_url
 from const import YELLOW_RAPS, PINK, PURPLE, PATTERNS
 
 
@@ -21,10 +21,10 @@ class SheetBuilder:
         self._repos = {}
         self._repo_names = {}
         self._repo_names_inverse = {}
-        self.prs_index = {}
-        self.internal_prs_index = {}
         self._team = []
         self._sheet_id = sheet_id
+        self.prs_index = {}
+        self.internal_prs_index = {}
 
     def build_table(self):
         """Build list of issues/PRs from given repositories.
@@ -47,16 +47,11 @@ class SheetBuilder:
 
         return issue_index
 
-    def fill_prs(self, table, closed_issues):
-        """Try autodetect connections between PRs and issues.
-
-        Uses previously built PR indexes.
+    def fill_prs(self, table):
+        """Designate PRs colors. Uses previously built PR indexes.
 
         Args:
             table (list): Lists, each of which represents single row.
-
-            closed_issues (list): Closed issues still must be updated
-                to make easier match between new and old tables.
 
         Returns: list of requests with coloring data.
         """
@@ -75,17 +70,6 @@ class SheetBuilder:
                     pull = pulls[0]
 
                     if pull.number != num:
-                        pr_url = build_url_formula(pull)
-                        try:
-                            closed_ind = closed_issues.index(issue)
-                            if num_field != 9:
-                                closed_issues[closed_ind][num_field] = pr_url
-                        except ValueError:
-                            pass
-
-                        if num_field != 9:
-                            issue[num_field] = pr_url
-
                         color = self._designate_status_color(pull)
                         if color:
                             requests.append(
@@ -103,7 +87,7 @@ class SheetBuilder:
             repo_lst (str): Repository short name.
 
         Returns:
-            github.Issue.Issue: issue object from GitHub.
+            github.Issue.Issue: Issue object from GitHub.
         """
         repo_name = self._repo_names_inverse.get(repo_lts)
         if repo_name is None:
@@ -124,6 +108,28 @@ class SheetBuilder:
         self._repo_names = config["repo_names"]
         self._repo_names_inverse = dict((v, k) for k, v in self._repo_names.items())
         self._team = config["team"]
+
+    def get_prs(self, issue_id):
+        """Return internal and public pull requests of specified issue.
+
+        Args:
+            issue_id (tuple): Issue's number and repo short name.
+
+        Returns:
+            dict:
+                All of the internal and public pull requests
+                related to the specified issue.
+        """
+        prs = {}
+
+        prs["public"] = self.prs_index.get(issue_id) or []
+        prs["public"].sort(key=sort_pull_requests, reverse=True)
+
+        internal_id = (issue_id[0], "Q-" + issue_id[1])
+        prs["internal"] = self.internal_prs_index.get(internal_id) or []
+        prs["internal"].sort(key=sort_pull_requests, reverse=True)
+
+        return prs
 
     def _get_repo(self, repo_name):
         """Return repo object by name.
