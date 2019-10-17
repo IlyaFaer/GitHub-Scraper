@@ -146,25 +146,35 @@ class Spreadsheet:
 
         # merging new and old tables
         for tracked_id in tracked_issues.keys():
+            prs = builder.get_prs(tracked_id)
             if tracked_id in raw_new_table:
                 updated_issue = raw_new_table.pop(tracked_id)
+
+                # update columns using fill function
+                for col in self._columns.names:
+                    self._columns.fill_funcs[col](
+                        tracked_issues[tracked_id],
+                        updated_issue,
+                        sheet_name,
+                        self._config.SHEETS[sheet_name],
+                        prs,
+                        False,
+                    )
             else:
                 updated_issue = builder.read_issue(*tracked_id)
+                if updated_issue:
+                    # update columns using fill function
+                    for col in self._columns.names:
+                        self._columns.fill_funcs[col](
+                            tracked_issues[tracked_id],
+                            updated_issue,
+                            sheet_name,
+                            self._config.SHEETS[sheet_name],
+                            prs,
+                            False,
+                        )
+
                 closed_issues.append(tracked_issues[tracked_id].as_list)
-
-                if not updated_issue:
-                    continue
-
-            # update columns using fill function
-            for col in self._columns.names:
-                self._columns.fill_funcs[col](
-                    tracked_issues[tracked_id],
-                    updated_issue,
-                    sheet_name,
-                    self._config.SHEETS[sheet_name],
-                    builder.get_prs(tracked_id),
-                    False,
-                )
 
         self._insert_new_issues(tracked_issues, raw_new_table, sheet_name)
         new_table = self._rows_to_lists(tracked_issues.values())
