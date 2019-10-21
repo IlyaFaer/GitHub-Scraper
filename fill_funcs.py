@@ -93,7 +93,7 @@ def fill_assignee(old_issue, issue, sheet_name, sheet_config, prs, is_new):
     assignee = issue.assignee
     if (
         old_issue["Assignee"] not in sheet_config["team"]
-        and old_issue["Assignee"] != "N/A"
+        or old_issue["Assignee"] == "N/A"
     ):
         if assignee:
             old_issue["Assignee"] = (
