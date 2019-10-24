@@ -55,8 +55,8 @@ def fill_priority(old_issue, issue, sheet_name, sheet_config, prs, is_new):
                         our_labels.append(our_label)
 
                 if our_labels:
-                    # bugs in our projects have high priority
-                    if "type: bug" in labels:
+                    # bugs and help requests are prioritized
+                    if "type: bug" in labels or "help wanted" in labels:
                         old_issue["Priority"] = "High"
                     # other issues
                     else:
