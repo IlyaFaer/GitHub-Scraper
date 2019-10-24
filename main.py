@@ -26,8 +26,11 @@ spreadsheet = Spreadsheet(config, spreadsheet_id)
 # updating table at specified period
 # if exception raised, log it and continue
 while True:
-    importlib.reload(config)
+    config.fill_funcs = importlib.reload(config.fill_funcs)
+    config.const = importlib.reload(config.const)
+    config = importlib.reload(config)
     spreadsheet.reload_config(config)
+
     try:
         logging.info("updating spreadsheet")
         spreadsheet.update_spreadsheet()

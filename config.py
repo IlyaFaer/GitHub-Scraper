@@ -1,11 +1,10 @@
 """
 File describes spreadsheet's architecture, including
-columns style, data validation, tracked repositories,
-tracked fields, etc..
+columns style, data validation, tracked repositories, etc..
 """
-from const import GREY, GREEN, BLUE, PINK, RED_KRAYOLA, GREEN_GOOD, WHITE, YELLOW
 from utils import get_num_from_url
 import fill_funcs
+import const
 
 
 projects_labels = {
@@ -91,13 +90,13 @@ COLUMNS = (
         "align": "CENTER",
         "fill_func": fill_funcs.fill_priority,
         "values": {  # possible values with their color
-            "Closed": GREY,
-            "Low": GREEN,
-            "Medium": BLUE,
-            "High": PINK,
-            "Critical": RED_KRAYOLA,
-            "Done": GREEN_GOOD,
-            "New": WHITE,
+            "Closed": const.GREY,
+            "Low": const.GREEN,
+            "Medium": const.BLUE,
+            "High": const.PINK,
+            "Critical": const.RED_KRAYOLA,
+            "Done": const.GREEN_GOOD,
+            "New": const.WHITE,
         },
     },
     {
@@ -112,10 +111,10 @@ COLUMNS = (
         "align": "CENTER",
         "fill_func": fill_funcs.fill_status,
         "values": {
-            "Pending": WHITE,
-            "In progress": GREEN,
-            "Paused": YELLOW,
-            "Finished": GREY,
+            "Pending": const.WHITE,
+            "In progress": const.GREEN,
+            "Paused": const.YELLOW,
+            "Finished": const.GREY,
         },
     },
     {
