@@ -16,12 +16,12 @@ service = auth.authenticate()
 class CachedSheetsIds:
     """
     Class posts request to get all the sheets of specified
-    spreadsheet, and then keeps sheet's ids in inner dict
+    spreadsheet, and then keeps their ids in inner dict
     for future needs.
 
     Args:
         spreadsheet_id (str):
-            Id of spreadsheet, which sheets must be cached.
+            Id of a spreadsheet, which sheets must be cached.
     """
 
     def __init__(self, spreadsheet_id):

@@ -38,6 +38,8 @@ def fill_priority(old_issue, issue, sheet_name, sheet_config, prs, is_new):
     if old_issue["Priority"] not in ("Closed", "Done"):
         if "backend" in labels:
             old_issue["Priority"] = "Low"
+        elif "help wanted" in labels:
+            old_issue["Priority"] = "High"
         elif old_issue["Priority"] == "New":
             if date_diff.days > 3:
                 our_labels = []
@@ -56,7 +58,7 @@ def fill_priority(old_issue, issue, sheet_name, sheet_config, prs, is_new):
 
                 if our_labels:
                     # bugs and help requests are prioritized
-                    if "type: bug" in labels or "help wanted" in labels:
+                    if "type: bug" in labels:
                         old_issue["Priority"] = "High"
                     # other issues
                     else:

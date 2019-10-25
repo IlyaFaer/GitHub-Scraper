@@ -3,7 +3,7 @@
 It creates Google spreadsheet according to a structure
 described in config.py file, and then updates it at
 specified interval. Before every update tracker reloads
-config.py module to get new preferences.
+config.py module to get new preferences and filling functions.
 """
 import time
 import socket
@@ -26,11 +26,13 @@ spreadsheet = Spreadsheet(config, spreadsheet_id)
 # updating table at specified period
 # if exception raised, log it and continue
 while True:
+    # reload configurations and constants
     config.fill_funcs = importlib.reload(config.fill_funcs)
     config.const = importlib.reload(config.const)
     config = importlib.reload(config)
     spreadsheet.reload_config(config)
 
+    # update spreadsheet's structure
     try:
         logging.info("updating spreadsheet")
         spreadsheet.update_spreadsheet()
@@ -38,6 +40,7 @@ while True:
     except (Exception, socket.timeout):
         logging.exception("Exception occured:")
 
+    # update every sheet data
     for sheet_name in config.SHEETS.keys():
         logging.info("updating " + sheet_name)
         try:
