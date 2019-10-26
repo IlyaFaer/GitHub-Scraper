@@ -20,7 +20,9 @@ class SheetBuilder:
     def __init__(self, sheet_id):
         self._repos = {}
         self._repo_names = {}
+        self._in_repo_names = {}
         self._repo_names_inverse = {}
+        self._internal_repos = []
         self._team = []
         self._sheet_id = sheet_id
         self.prs_index = {}
@@ -35,7 +37,9 @@ class SheetBuilder:
                 {(issue.number, repo_short_name): github.Issue.Issue}
         """
         issue_index = {}
-        for repo_name in self._repo_names.keys():
+        repo_names = list(self._repo_names.keys()) + list(self._in_repo_names.keys())
+
+        for repo_name in repo_names:
             repo = self._get_repo(repo_name)
             self._index_closed_prs(repo)
 
@@ -60,13 +64,13 @@ class SheetBuilder:
         for index, issue in enumerate(table):
             num = get_num_from_url(issue[1])
 
-            for prs_index, num_field, prefix in (
-                (self.prs_index, 9, ""),
-                (self.internal_prs_index, 8, "Q-"),
+            for prs_index, num_field in (
+                (self.prs_index, 9),
+                (self.internal_prs_index, 8),
             ):
 
-                if (num, prefix + issue[5]) in prs_index.keys():
-                    pulls = prs_index.pop((num, prefix + issue[5]))
+                if (num, issue[5]) in prs_index.keys():
+                    pulls = prs_index.pop((num, issue[5]))
                     pull = pulls[0]
 
                     if pull.number != num:
@@ -106,6 +110,10 @@ class SheetBuilder:
         self.internal_prs_index = {}
 
         self._repo_names = config["repo_names"]
+        self._in_repo_names = config.get("internal_repo_names", {})
+
+        self._internal_repos = list(self._in_repo_names.keys())
+
         self._repo_names_inverse = dict((v, k) for k, v in self._repo_names.items())
         self._team = config["team"]
 
@@ -122,11 +130,10 @@ class SheetBuilder:
         """
         prs = {}
 
-        prs["public"] = self.prs_index.get(issue_id) or []
+        prs["public"] = self.prs_index.get(issue_id, [])
         prs["public"].sort(key=sort_pull_requests, reverse=True)
 
-        internal_id = (issue_id[0], "Q-" + issue_id[1])
-        prs["internal"] = self.internal_prs_index.get(internal_id) or []
+        prs["internal"] = self.internal_prs_index.get(issue_id, [])
         prs["internal"].sort(key=sort_pull_requests, reverse=True)
 
         return prs
@@ -167,7 +174,7 @@ class SheetBuilder:
                 linked issue number.
         """
         # internal PR
-        if repo.full_name.startswith("q-logic/"):
+        if repo.full_name in self._internal_repos:
             issue_num = key_exp.split()[1]
             if not (issue_num, repo_lts) in self.internal_prs_index:
                 self.internal_prs_index[issue_num, repo_lts] = []
@@ -181,8 +188,24 @@ class SheetBuilder:
 
             self.prs_index[issue_num, repo_lts].append(lpr)
 
+    def _get_repo_lts(self, repo):
+        """Get repo's short name.
+
+        Args:
+            repo (github.Repository.Repository):
+                Repository object.
+
+        Returns:
+            str: Repo's short name.
+        """
+        repo_lts = self._repo_names.get(repo.full_name)
+        if repo_lts is None:
+            repo_lts = self._in_repo_names.get(repo.full_name)
+
+        return repo_lts
+
     def _index_closed_prs(self, repo):
-        """Add to PRs index closed pull requests.
+        """Add closed pull requests into PRs index.
 
         Args:
             repo (github.Repository.Repository):
@@ -190,11 +213,10 @@ class SheetBuilder:
         """
         pulls = repo.get_pulls(state="closed", sort="created", direction="desc")
 
-        repo_lts = self._repo_names[repo.full_name]
         for pull in pulls:
             key_phrases = self._try_match_keywords(pull.body)
             for key_phrase in key_phrases:
-                self._add_into_index(repo, repo_lts, pull, key_phrase)
+                self._add_into_index(repo, self._get_repo_lts(repo), pull, key_phrase)
 
     def _build_issues_id(self, issue, repo):
         """Designate issue's id. If issue is PR, index it.
@@ -208,7 +230,7 @@ class SheetBuilder:
             tuple: issue's number and repo short name.
         """
         id_ = ()
-        repo_lts = self._repo_names[repo.full_name]
+        repo_lts = self._get_repo_lts(repo)
 
         if issue.pull_request is None:
             id_ = (str(issue.number), repo_lts)

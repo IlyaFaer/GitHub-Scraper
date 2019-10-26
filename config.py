@@ -26,11 +26,14 @@ SHEETS = {
     # -----------------------------
     "Python": {  # sheet name
         "labels": projects_labels,  # meaningful labels
-        "repo_names": {  # repos to track
+        # repos to track
+        "repo_names": {
             "googleapis/google-cloud-python": "GCP",
             "googleapis/google-resumable-media-python": "GRMP",
-            "q-logic/google-cloud-python": "Q-GCP",
-            "q-logic/google-resumable-media-python": "Q-GRMP",
+        },
+        "internal_repo_names": {
+            "q-logic/google-cloud-python": "GCP",
+            "q-logic/google-resumable-media-python": "GRMP",
         },
         "team": [  # team, that works in this repos
             "IlyaFaer",
@@ -74,10 +77,8 @@ SHEETS = {
     # -----------------------------
     "PHP": {
         "labels": projects_labels,
-        "repo_names": {
-            "googleapis/google-cloud-php": "GCPHP",
-            "q-logic/google-cloud-php": "Q-GCPHP",
-        },
+        "repo_names": {"googleapis/google-cloud-php": "GCPHP"},
+        "internal_repo_names": {"q-logic/google-cloud-php": "GCPHP"},
         "team": ["andrewinc", "Other", "N/A"],
     },
 }
