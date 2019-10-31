@@ -208,7 +208,9 @@ class Spreadsheet:
         # set validation for team members
         self._config.COLUMNS[7]["values"] = self._config.SHEETS[sheet_name]["team"]
 
-        self._columns = Columns(self._config.COLUMNS, self._sheets_ids.get(sheet_name))
+        self._columns = Columns(
+            self._config.SHEETS[sheet_name]["columns"], self._sheets_ids.get(sheet_name)
+        )
 
         self._insert_into_sheet(sheet_name, [self._columns.names], "A1")
         self._apply_formating_data(self._columns.requests)

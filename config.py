@@ -2,6 +2,7 @@
 File describes spreadsheet's architecture, including
 columns style, data validation, tracked repositories, etc..
 """
+import copy
 from utils import get_num_from_url
 import fill_funcs
 import const
@@ -21,70 +22,8 @@ projects_labels = {
 TITLE = "QLogic Issue Tracker"  # spreadsheet title
 UPDATE_PERIODICITY = 3600  # duration of pause between updates
 
-# sheets structure
-SHEETS = {
-    # -----------------------------
-    "Python": {  # sheet name
-        "labels": projects_labels,  # meaningful labels
-        # repos to track
-        "repo_names": {
-            "googleapis/google-cloud-python": "GCP",
-            "googleapis/google-resumable-media-python": "GRMP",
-        },
-        "internal_repo_names": {
-            "q-logic/google-cloud-python": "GCP",
-            "q-logic/google-resumable-media-python": "GRMP",
-        },
-        "team": [  # team, that works in this repos
-            "IlyaFaer",
-            "HemangChothani",
-            "mf2199",
-            "sumit-ql",
-            "sangramql",
-            "Emar-Kar",
-            "Other",
-            "N/A",
-        ],
-    },
-    # -----------------------------
-    "NodeJS": {
-        "labels": {},
-        "repo_names": {
-            "googleapis/nodejs-storage": "Storage",
-            "googleapis/nodejs-firestore": "FireStore",
-            "googleapis/nodejs-bigquery": "BigQuery",
-            "googleapis/nodejs-spanner": "Spanner",
-            "googleapis/nodejs-bigtable": "BigTable",
-            "googleapis/nodejs-pubsub": "PubSub",
-        },
-        "team": [
-            "laljikanjareeya",
-            "praveenqlogic01",
-            "jiren",
-            "vishald123",
-            "AVaksman",
-            "IvanAvanessov",
-            "Other",
-            "N/A",
-        ],
-    },
-    # -----------------------------
-    "Golang": {
-        "labels": projects_labels,
-        "repo_names": {"googleapis/google-cloud-go": "GCG"},
-        "team": ["IlyaFaer", "AlisskaPie", "Other", "N/A"],
-    },
-    # -----------------------------
-    "PHP": {
-        "labels": projects_labels,
-        "repo_names": {"googleapis/google-cloud-php": "GCPHP"},
-        "internal_repo_names": {"q-logic/google-cloud-php": "GCPHP"},
-        "team": ["andrewinc", "Other", "N/A"],
-    },
-}
-
 # columns structure
-COLUMNS = (
+COLUMNS = [
     {
         "name": "Priority",  # 0
         "width": 80,
@@ -151,7 +90,78 @@ COLUMNS = (
     {"name": "Task", "align": "CENTER"},  # 10
     {"name": "Opened", "align": "CENTER", "type": "date"},  # 11
     {"name": "Comment", "width": 550},  # 12
-)
+]
+
+# we don't review code internally in Go
+GO_COLUMNS = copy.copy(COLUMNS)
+GO_COLUMNS.pop(8)
+
+# sheets structure
+SHEETS = {
+    # -----------------------------
+    "Python": {  # sheet name
+        "labels": projects_labels,  # meaningful labels
+        # repos to track
+        "repo_names": {
+            "googleapis/google-cloud-python": "GCP",
+            "googleapis/google-resumable-media-python": "GRMP",
+        },
+        "internal_repo_names": {
+            "q-logic/google-cloud-python": "GCP",
+            "q-logic/google-resumable-media-python": "GRMP",
+        },
+        "team": [  # team, that works in this repos
+            "IlyaFaer",
+            "HemangChothani",
+            "mf2199",
+            "sumit-ql",
+            "sangramql",
+            "Emar-Kar",
+            "Other",
+            "N/A",
+        ],
+        # columns configurations for that sheet
+        "columns": COLUMNS,
+    },
+    # -----------------------------
+    "NodeJS": {
+        "labels": {},
+        "repo_names": {
+            "googleapis/nodejs-storage": "Storage",
+            "googleapis/nodejs-firestore": "FireStore",
+            "googleapis/nodejs-bigquery": "BigQuery",
+            "googleapis/nodejs-spanner": "Spanner",
+            "googleapis/nodejs-bigtable": "BigTable",
+            "googleapis/nodejs-pubsub": "PubSub",
+        },
+        "team": [
+            "laljikanjareeya",
+            "praveenqlogic01",
+            "jiren",
+            "vishald123",
+            "AVaksman",
+            "IvanAvanessov",
+            "Other",
+            "N/A",
+        ],
+        "columns": COLUMNS,
+    },
+    # -----------------------------
+    "Golang": {
+        "labels": projects_labels,
+        "repo_names": {"googleapis/google-cloud-go": "GCG"},
+        "team": ["IlyaFaer", "AlisskaPie", "Other", "N/A"],
+        "columns": GO_COLUMNS,
+    },
+    # -----------------------------
+    "PHP": {
+        "labels": projects_labels,
+        "repo_names": {"googleapis/google-cloud-php": "GCPHP"},
+        "internal_repo_names": {"q-logic/google-cloud-php": "GCPHP"},
+        "team": ["andrewinc", "Other", "N/A"],
+        "columns": COLUMNS,
+    },
+}
 
 
 def sort_func(row):
