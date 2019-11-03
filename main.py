@@ -19,8 +19,10 @@ logging.basicConfig(
     level=logging.INFO,
 )
 
-# spreadsheet_id = None
+# this id is QLogic internal - redefine to None
+# to build your own spreadsheet
 spreadsheet_id = "1Z9QoQ8xUoOtHVUtrtLV6T78J30jvQS4uE0G4AK2Bhkc"
+# spreadsheet_id = None
 spreadsheet = Spreadsheet(config, spreadsheet_id)
 
 # updating table at specified period
@@ -40,7 +42,7 @@ while True:
     except (Exception, socket.timeout):
         logging.exception("Exception occured:")
 
-    # update every sheet data
+    # update data in every sheet
     for sheet_name in config.SHEETS.keys():
         logging.info("updating " + sheet_name)
         try:

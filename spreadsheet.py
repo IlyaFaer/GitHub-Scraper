@@ -206,8 +206,7 @@ class Spreadsheet:
 
         Args:
             config (module):
-                Imported config.py module with all
-                preferences.
+                Imported config.py module with all preferences.
         """
         self._config = config
 
