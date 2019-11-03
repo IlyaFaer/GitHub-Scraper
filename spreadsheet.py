@@ -31,7 +31,7 @@ class CachedSheetsIds:
         self.update()
 
     def update(self):
-        """Read sheets and save them internally."""
+        """Read sheet ids list from the spreadsheet and save them internally."""
         resp = service.spreadsheets().get(spreadsheetId=self._spreadsheet_id).execute()
 
         for sheet in resp["sheets"]:
@@ -47,6 +47,11 @@ class CachedSheetsIds:
         Returns: numeric id of given sheet.
         """
         return self._sheet_ids.get(sheet_name)
+
+    @property
+    def as_dict(self):
+        """Return dict with names and numeric ids of sheets."""
+        return self._sheet_ids
 
 
 class Spreadsheet:
@@ -91,7 +96,8 @@ class Spreadsheet:
         """Update spreadsheet structure.
 
         Rename spreadsheet, if name in config.py had been changed.
-        Add new sheets into spreadsheet.
+        Add new sheets into spreadsheet, delete sheets, which
+        were deleted from configurations.
         """
         # spreadsheet rename request
         requests = [
@@ -104,10 +110,11 @@ class Spreadsheet:
         ]
 
         self._sheets_ids.update()
+        sheets_in_conf = tuple(self._config.SHEETS.keys())
 
-        # build requests for new sheets
+        # build insert-requests for new sheets
         new_sheets = False
-        for sheet_name in self._config.SHEETS.keys():
+        for sheet_name in sheets_in_conf:
             if not self._sheets_ids.get(sheet_name):
                 new_sheets = True
                 requests.append(
@@ -120,12 +127,20 @@ class Spreadsheet:
                         }
                     }
                 )
+        # build delete-requests for sheets, which
+        # haven't been found in configurations
+        del_sheets = False
+        sheets = self._sheets_ids.as_dict
+        for sheet_name in sheets.keys():
+            if sheet_name not in sheets_in_conf:
+                del_sheets = True
+                requests.append({"deleteSheet": {"sheetId": sheets[sheet_name]}})
 
         service.spreadsheets().batchUpdate(
             spreadsheetId=self._id, body={"requests": requests}
         ).execute()
 
-        if new_sheets:
+        if new_sheets or del_sheets:
             self._sheets_ids.update()
 
     def update_sheet(self, sheet_name):
