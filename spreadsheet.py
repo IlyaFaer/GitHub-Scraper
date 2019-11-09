@@ -243,7 +243,7 @@ class Spreadsheet:
 
         # convert rows into lists
         for index, row in enumerate(new_table):
-            new_table[index] = row.as_list
+            new_table[index] = row.as_list[: len(self._columns.names) - 1]
 
         return new_table
 
