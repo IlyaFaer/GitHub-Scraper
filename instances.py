@@ -195,17 +195,29 @@ class Columns:
 
 
 class Row(dict):
-    """Dict-like representation of single row."""
+    """Dict-like representation of single row.
+
+    Args:
+        column_names (list): List of column names.
+    """
 
     def __init__(self, column_names):
         super().__init__()
+        # fill this dict for coloring cells in manner:
+        # {col_name: color}
+        self.colors = {}
+
         self._column_names = column_names
         for col in column_names:
             self[col] = ""
 
     @property
     def as_list(self):
-        """Return list representation of row."""
+        """Return list representation of row.
+
+        Returns:
+            list: List with column values for the row.
+        """
         row = []
         if any(tuple(self.values())):
             for name in self._column_names:
