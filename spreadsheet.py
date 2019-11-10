@@ -7,7 +7,7 @@ import sheet_builder
 import auth
 from utils import gen_color_request, get_num_from_url
 from instances import Columns, Row
-from const import GREY, DIGITS_PATTERN
+from const import DIGITS_PATTERN
 
 
 service = auth.authenticate()
@@ -149,8 +149,6 @@ class Spreadsheet:
         Args:
             sheet_name (str): Name of sheet to be updated.
         """
-        closed_issues = []
-
         # build new table from repositories
         builder = self._get_sheet_builder(sheet_name)
         builder.update_config(self._config.SHEETS[sheet_name])
@@ -189,16 +187,12 @@ class Spreadsheet:
                             False,
                         )
 
-                closed_issues.append(tracked_issues[tracked_id].as_list)
-
         self._insert_new_issues(tracked_issues, raw_new_table, sheet_name)
-        new_table = self._rows_to_lists(tracked_issues.values())
+        new_table, requests = self._rows_to_lists(tracked_issues.values(), sheet_name)
 
-        requests = builder.fill_prs(new_table)
         self._format_sheet(sheet_name)
         self._insert_into_sheet(sheet_name, new_table, "A2")
 
-        requests += self._gen_closed_requests(closed_issues, new_table, sheet_name)
         self._apply_formating_data(requests)
 
     def reload_config(self, config):
@@ -229,15 +223,19 @@ class Spreadsheet:
         self._insert_into_sheet(sheet_name, [self._columns.names], "A1")
         self._apply_formating_data(self._columns.requests)
 
-    def _rows_to_lists(self, tracked_issues):
+    def _rows_to_lists(self, tracked_issues, sheet_name):
         """Convert every Row into list before sending into spreadsheet.
 
         Args:
             tracked_issues (list): Rows, each of which represents single row.
+            sheet_name (str): Name of sheet to be updated.
 
         Returns:
-            list: lists, each of which represents single row.
+            list: Lists, each of which represents single row.
+            list: Dicts, each of which represents single coloring request.
         """
+        requests = []
+
         new_table = list(tracked_issues)
         new_table.sort(key=self._config.sort_func)
 
@@ -245,29 +243,16 @@ class Spreadsheet:
         for index, row in enumerate(new_table):
             new_table[index] = row.as_list[: len(self._columns.names) - 1]
 
-        return new_table
-
-    def _gen_closed_requests(self, closed_issues, new_table, sheet_name):
-        """Generate requests for marking closed issues with color.
-
-        Args:
-            closed_issues (list): Issues, that are already closed.
-
-            new_table (list): New data to insert into spreadsheet.
-
-            sheet_name (str): Name of the sheet to be updated.
-
-        Returns:
-            list: formatting requests for Google Sheets API.
-        """
-        requests = []
-
-        for closed_issue in closed_issues:
-            num = new_table.index(closed_issue)
-            requests.append(
-                gen_color_request(self._sheets_ids.get(sheet_name), num + 1, 1, GREY)
-            )
-        return requests
+            for col, color in row.colors.items():
+                requests.append(
+                    gen_color_request(
+                        self._sheets_ids.get(sheet_name),
+                        index + 1,
+                        self._columns.names.index(col),
+                        color,
+                    )
+                )
+        return new_table, requests
 
     def _get_sheet_builder(self, sheet_name):
         """Return builder for specified sheet.

@@ -6,7 +6,8 @@ Every filling function accepts:
 
 old_issue (Row): Dict-like object, which represents
 row, retrieved from a spreadsheet. Redact it's values to
-update row values in spreadsheet.
+update row values in spreadsheet. Use it's colors attribute
+for coloring cells.
 
 issue (github.Issue.Issue): Issue object, read from GitHub.
 
@@ -22,6 +23,8 @@ is_new (bool): New issue in table.
 """
 import datetime
 from utils import build_url_formula
+from sheet_builder import designate_status_color
+from const import GREY
 
 
 def fill_priority(old_issue, issue, sheet_name, sheet_config, prs, is_new):
@@ -72,6 +75,9 @@ def fill_issue(old_issue, issue, sheet_name, sheet_config, prs, is_new):
     """'Issue' column filling."""
     if is_new:
         old_issue["Issue"] = build_url_formula(issue)
+
+    if issue.closed_at:
+        old_issue.colors["Issue"] = GREY
 
 
 def fill_status(old_issue, issue, sheet_name, sheet_config, prs, is_new):
@@ -128,13 +134,23 @@ def fill_project(old_issue, issue, sheet_name, sheet_config, prs, is_new):
 def fill_ppr(old_issue, issue, sheet_name, sheet_config, prs, is_new):
     """'Public PR' column filling."""
     if prs["public"]:
-        old_issue["Public PR"] = build_url_formula(prs["public"][0])
+        last_pr = prs["public"][0]
+
+        old_issue["Public PR"] = build_url_formula(last_pr)
+        old_issue.colors["Public PR"] = designate_status_color(
+            last_pr, sheet_config["team"]
+        )
 
 
 def fill_ipr(old_issue, issue, sheet_name, sheet_config, prs, is_new):
     """'Internal PR' column filling."""
     if prs["internal"]:
-        old_issue["Internal PR"] = build_url_formula(prs["internal"][0])
+        last_pr = prs["internal"][0]
+
+        old_issue["Internal PR"] = build_url_formula(last_pr)
+        old_issue.colors["Internal PR"] = designate_status_color(
+            last_pr, sheet_config["team"]
+        )
 
 
 def dont_fill(old_issue, issue, sheet_name, sheet_config, prs, is_new):

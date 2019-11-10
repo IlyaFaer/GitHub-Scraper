@@ -3,7 +3,6 @@ Utils for reading data from GitHub and building
 them into structures.
 """
 from github import Github
-from utils import gen_color_request, get_num_from_url
 from const import YELLOW_RAPS, PINK, PURPLE, PATTERNS
 
 
@@ -50,38 +49,6 @@ class SheetBuilder:
                     issue_index[id_] = issue
 
         return issue_index
-
-    def fill_prs(self, table):
-        """Designate PRs colors. Uses previously built PR indexes.
-
-        Args:
-            table (list): Lists, each of which represents single row.
-
-        Returns: list of requests with coloring data.
-        """
-        requests = []
-
-        for index, issue in enumerate(table):
-            num = get_num_from_url(issue[1])
-
-            for prs_index, num_field in (
-                (self.prs_index, 9),
-                (self.internal_prs_index, 8),
-            ):
-
-                if (num, issue[5]) in prs_index.keys():
-                    pulls = prs_index.pop((num, issue[5]))
-                    pull = pulls[0]
-
-                    if pull.number != num:
-                        color = self._designate_status_color(pull)
-                        if color:
-                            requests.append(
-                                gen_color_request(
-                                    self._sheet_id, index + 1, num_field, color
-                                )
-                            )
-        return requests
 
     def read_issue(self, issue_num, repo_lts):
         """Read issue by it's number and repository short name.
@@ -258,25 +225,26 @@ class SheetBuilder:
                     return result
         return []
 
-    def _designate_status_color(self, pull):
-        """Check PR's status and return corresponding color.
-
-        Args:
-            pull (github.PullRequest.PullRequest):
-                Pull request object.
-        """
-        status = None
-
-        if pull.merged:
-            status = PURPLE
-        elif pull.state == "closed" and not pull.merged:
-            status = PINK
-        elif pull.user.login not in self._team:
-            status = YELLOW_RAPS
-
-        return status
-
 
 def sort_pull_requests(pull_request):
     """Sort pull requests by their creation date."""
     return pull_request.created_at
+
+
+def designate_status_color(pull, team):
+    """Check PR's status and return corresponding color.
+
+    Args:
+        pull (github.PullRequest.PullRequest):
+            Pull request object.
+    """
+    status = None
+
+    if pull.merged:
+        status = PURPLE
+    elif pull.state == "closed" and not pull.merged:
+        status = PINK
+    elif pull.user.login not in team:
+        status = YELLOW_RAPS
+
+    return status
