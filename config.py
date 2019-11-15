@@ -161,6 +161,17 @@ SHEETS = {
         "team": ["andrewinc", "Other", "N/A"],
         "columns": COLUMNS,
     },
+    "Java": {
+        "labels": projects_labels,
+        "repo_names": {
+            "googleapis/java-bigtable": "BigTable",
+            "googleapis/java-bigtable-hbase": "BT HBase",
+            "googleapis/google-cloud-java": "GCJ",
+        },
+        "internal_repo_names": {},
+        "team": ["athakor", "pmakani", "rahulKQL", "Other", "N/A"],
+        "columns": COLUMNS,
+    },
 }
 
 
