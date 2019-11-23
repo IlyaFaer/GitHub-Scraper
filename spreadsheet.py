@@ -5,6 +5,7 @@ build and update issues/PRs tables.
 import string
 import sheet_builder
 import auth
+import fill_funcs
 from utils import gen_color_request, get_num_from_url
 from instances import Columns, Row
 from const import DIGITS_PATTERN
@@ -157,6 +158,7 @@ class Spreadsheet:
         # read existing data from sheet
         tracked_issues = self._read_sheet(sheet_name)
 
+        to_be_deleted = []
         # merging new and old tables
         for tracked_id in tracked_issues.keys():
             prs = builder.get_prs(tracked_id)
@@ -186,6 +188,11 @@ class Spreadsheet:
                             prs,
                             False,
                         )
+            to_del = fill_funcs.to_be_deleted(
+                tracked_issues[tracked_id], updated_issue, prs
+            )
+            if to_del:
+                to_be_deleted.append(tracked_id)
 
         self._insert_new_issues(tracked_issues, raw_new_table, sheet_name)
         new_table, requests = self._rows_to_lists(tracked_issues.values(), sheet_name)
@@ -361,12 +368,9 @@ class Spreadsheet:
         """
         start_index = int(DIGITS_PATTERN.findall(start_from)[0])
 
-        # get maximal row length
-        length = max([len(row) for row in rows])
-
         sym_range = "{start_from}:{last_sym}{count}".format(
             start_from=start_from,
-            last_sym=string.ascii_uppercase[length - 1],
+            last_sym=string.ascii_uppercase[len(rows[0]) - 1],
             count=len(rows) + start_index + 1,
         )
 

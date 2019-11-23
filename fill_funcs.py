@@ -159,3 +159,26 @@ def dont_fill(old_issue, issue, sheet_name, sheet_config, prs, is_new):
     columns with no 'fill_func' field.
     """
     pass
+
+
+def to_be_deleted(row, issue, prs):
+    """
+    Cleanup function, which designates if issue should be
+    deleted from the spreadsheet.
+
+    Args:
+        row (Row): Dict-like object, which represents
+            row, retrieved from a spreadsheet.
+        issue (github.Issue.Issue): Issue object, read from GitHub.
+        prs (dict): Lists of related internal and public
+            pull requests (designated by GitHub keywords).
+            Pull requests are sorted by creation date (DESC).
+
+    Returns:
+        bool:
+            True if issue should be deleted from the
+            spreadsheet, False otherwise.
+    """
+    if issue and issue.closed_at and row["Assignee"] in ("Other", "N/A"):
+        return True
+    return False
