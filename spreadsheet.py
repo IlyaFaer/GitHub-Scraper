@@ -336,7 +336,6 @@ class Spreadsheet:
                 )
                 .execute()["values"]
             )
-
         title_row, table = table[0], table[1:]
 
         self._convert_to_rows(title_row, table)
@@ -362,9 +361,12 @@ class Spreadsheet:
         """
         start_index = int(DIGITS_PATTERN.findall(start_from)[0])
 
+        # get maximal row length
+        length = max([len(row) for row in rows])
+
         sym_range = "{start_from}:{last_sym}{count}".format(
             start_from=start_from,
-            last_sym=string.ascii_uppercase[len(rows[0]) - 1],
+            last_sym=string.ascii_uppercase[length - 1],
             count=len(rows) + start_index + 1,
         )
 
