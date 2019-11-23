@@ -218,12 +218,11 @@ class SheetBuilder:
 
         Returns: List of key phrases with issue numbers, if found.
         """
+        result = []
         if body:
             for pattern in PATTERNS:
-                result = pattern.findall(body)
-                if result:
-                    return result
-        return []
+                result += pattern.findall(body)
+        return result
 
 
 def sort_pull_requests(pull_request):
