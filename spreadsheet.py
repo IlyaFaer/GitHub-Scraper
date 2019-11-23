@@ -194,12 +194,16 @@ class Spreadsheet:
             if to_del:
                 to_be_deleted.append(tracked_id)
 
+        for id_ in to_be_deleted:
+            tracked_issues.pop(id_)
+
         self._insert_new_issues(tracked_issues, raw_new_table, sheet_name)
         new_table, requests = self._rows_to_lists(tracked_issues.values(), sheet_name)
 
         self._format_sheet(sheet_name)
         self._insert_into_sheet(sheet_name, new_table, "A2")
 
+        self._clear_range(sheet_name, len(tracked_issues))
         self._apply_formating_data(requests)
 
     def reload_config(self, config):
@@ -210,6 +214,21 @@ class Spreadsheet:
                 Imported config.py module with all preferences.
         """
         self._config = config
+
+    def _clear_range(self, sheet_name, length):
+        """Delete data from last cell to the end.
+
+        Args:
+            sheet_name (str): Sheet name.
+            length (int): Length of issues list.
+        """
+        sym_range = "{sheet_name}!{start_from}:1000".format(
+            sheet_name=sheet_name, start_from=length + 2
+        )
+
+        service.spreadsheets().values().clear(
+            spreadsheetId=self._id, range=sym_range
+        ).execute()
 
     def _format_sheet(self, sheet_name):
         """Update sheet's structure.
