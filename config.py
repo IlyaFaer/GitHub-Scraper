@@ -170,7 +170,7 @@ SHEETS = {
             "googleapis/google-cloud-java": "GCJ",
         },
         "internal_repo_names": {},
-        "team": ["athakor", "pmakani", "rahulKQL", "Other", "N/A"],
+        "team": ["athakor", "pmakani", "rahulKQL", "fazunenko", "Other", "N/A"],
         "columns": COLUMNS,
     },
 }
