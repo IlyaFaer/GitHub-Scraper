@@ -150,7 +150,10 @@ SHEETS = {
     # -----------------------------
     "Golang": {
         "labels": projects_labels,
-        "repo_names": {"googleapis/google-cloud-go": "GCG"},
+        "repo_names": {
+            "googleapis/google-cloud-go": "Cloud",
+            "googleapis/google-api-go-client": "ApiClient",
+        },
         "team": ["IlyaFaer", "AlisskaPie", "Other", "N/A"],
         "columns": GO_COLUMNS,
     },
