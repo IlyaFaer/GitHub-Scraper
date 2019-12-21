@@ -41,9 +41,4 @@ Red - PR had been closed
 Violet - PR had been merged  
 
 **Assignee**  
-In *config.py* you can specify team members. If any member assigned issue, his login will be shown in Assignee column. If issue was assigned by someone else, you'll see "Other" in Assignee column.  
-
-**Future features**  
-* Statistics row
-* Tracking changes during week (merging, creating PR's, etc.)
-* Tracking review approvement
+In *config.py* you can specify team members. If any member assigned issue, his login will be shown in Assignee column. If issue was assigned by someone else, you'll see "Other" in Assignee column.
