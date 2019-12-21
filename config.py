@@ -1,6 +1,6 @@
 """
 File describes spreadsheet's architecture, including
-columns style, data validation, tracked repositories, etc..
+columns style, data validation, tracked repositories, etc.
 """
 import copy
 from utils import get_num_from_url
@@ -8,6 +8,7 @@ import fill_funcs
 import const
 
 
+# {<label name>: <project name>}
 projects_labels = {
     "api: storage": "Storage",
     "api: firestore": "FireStore",
@@ -25,11 +26,11 @@ UPDATE_PERIODICITY = 3600  # duration of pause between updates
 # columns structure
 COLUMNS = [
     {
-        "name": "Priority",  # 0
+        "name": "Priority",
         "width": 80,
         "align": "CENTER",
         "fill_func": fill_funcs.fill_priority,
-        "values": {  # possible values with their color
+        "values": {  # possible values with their colors
             "Closed": const.GREY,
             "Low": const.GREEN,
             "Medium": const.BLUE,
@@ -40,14 +41,14 @@ COLUMNS = [
         },
     },
     {
-        "name": "Issue",  # 1
+        "name": "Issue",
         "width": 50,
         "align": "CENTER",
         "type": "link",
         "fill_func": fill_funcs.fill_issue,
     },
     {
-        "name": "Work status",  # 2
+        "name": "Work status",
         "align": "CENTER",
         "fill_func": fill_funcs.fill_status,
         "values": {
@@ -58,38 +59,29 @@ COLUMNS = [
         },
     },
     {
-        "name": "Created",  # 3
+        "name": "Created",
         "align": "CENTER",
         "type": "date",
         "fill_func": fill_funcs.fill_created,
     },
-    {
-        "name": "Description",  # 4
-        "width": 450,
-        "fill_func": fill_funcs.fill_description,
-    },
-    {
-        "name": "Repository",
-        "align": "CENTER",
-        "fill_func": fill_funcs.fill_repository,
-    },  # 5
-    {"name": "Project", "align": "CENTER", "fill_func": fill_funcs.fill_project},  # 6
-    {"name": "Assignee", "align": "CENTER", "fill_func": fill_funcs.fill_assignee},  # 7
+    {"name": "Description", "width": 450, "fill_func": fill_funcs.fill_description},
+    {"name": "Repository", "align": "CENTER", "fill_func": fill_funcs.fill_repository},
+    {"name": "Project", "align": "CENTER", "fill_func": fill_funcs.fill_project},
+    {"name": "Assignee", "align": "CENTER", "fill_func": fill_funcs.fill_assignee},
     {
         "name": "Internal PR",
         "align": "CENTER",
         "type": "link",
         "fill_func": fill_funcs.fill_ipr,
-    },  # 8
+    },
     {
         "name": "Public PR",
         "align": "CENTER",
         "type": "link",
         "fill_func": fill_funcs.fill_ppr,
-    },  # 9
-    {"name": "Task", "align": "CENTER"},  # 10
-    {"name": "Opened", "align": "CENTER", "type": "date"},  # 11
-    {"name": "Comment", "width": 550},  # 12
+    },
+    {"name": "Task", "align": "CENTER"},
+    {"name": "Comment", "width": 550},
 ]
 
 # we don't review code internally in Go
@@ -121,7 +113,7 @@ SHEETS = {
             "Other",
             "N/A",
         ],
-        # columns configurations for that sheet
+        # columns configurations for this sheet
         "columns": COLUMNS,
     },
     # -----------------------------
@@ -180,7 +172,7 @@ SHEETS = {
 
 
 def sort_func(row):
-    """Function sorts data in the sheet.
+    """Function sorts data within sheet.
 
     Args:
         row (dict): Dict representation of single row.

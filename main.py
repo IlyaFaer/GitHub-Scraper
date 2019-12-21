@@ -6,7 +6,6 @@ specified interval. Before every update tracker reloads
 config.py module to get new preferences and filling functions.
 """
 import time
-import socket
 import importlib
 import logging
 import config
@@ -34,12 +33,12 @@ while True:
     config = importlib.reload(config)
     spreadsheet.reload_config(config)
 
-    # update spreadsheet's structure
+    # update spreadsheet structure
     try:
         logging.info("updating spreadsheet")
         spreadsheet.update_spreadsheet()
         logging.info("updated")
-    except (Exception, socket.timeout):
+    except Exception:
         logging.exception("Exception occured:")
 
     # update data in every sheet
@@ -48,7 +47,7 @@ while True:
         try:
             spreadsheet.update_sheet(sheet_name)
             logging.info("updated")
-        except (Exception, socket.timeout):
+        except Exception:
             logging.exception("Exception occured:")
 
     time.sleep(config.UPDATE_PERIODICITY)

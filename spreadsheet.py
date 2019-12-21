@@ -97,8 +97,8 @@ class Spreadsheet:
         """Update spreadsheet structure.
 
         Rename spreadsheet, if name in config.py had been changed.
-        Add new sheets into spreadsheet, delete sheets, which
-        were deleted from configurations.
+        Add new sheets into spreadsheet, delete sheets deleted
+        from the configurations.
         """
         # spreadsheet rename request
         requests = [
@@ -113,7 +113,7 @@ class Spreadsheet:
         self._sheets_ids.update()
         sheets_in_conf = tuple(self._config.SHEETS.keys())
 
-        # build insert-requests for new sheets
+        # build insert requests for the new sheets
         new_sheets = False
         for sheet_name in sheets_in_conf:
             if not self._sheets_ids.get(sheet_name):
@@ -128,8 +128,8 @@ class Spreadsheet:
                         }
                     }
                 )
-        # build delete-requests for sheets, which
-        # haven't been found in configurations
+        # build delete requests for the sheets, which
+        # haven't been found in the configurations
         del_sheets = False
         sheets = self._sheets_ids.as_dict
         for sheet_name in sheets.keys():
@@ -148,24 +148,24 @@ class Spreadsheet:
         """Update specified sheet with issues/PRs data.
 
         Args:
-            sheet_name (str): Name of sheet to be updated.
+            sheet_name (str): Name of the sheet to be updated.
         """
-        # build new table from repositories
+        # build new table from the repositories specified in config.py
         builder = self._get_sheet_builder(sheet_name)
         builder.update_config(self._config.SHEETS[sheet_name])
         raw_new_table = builder.build_table()
 
-        # read existing data from sheet
+        # read existing data from the sheet
         tracked_issues = self._read_sheet(sheet_name)
 
         to_be_deleted = []
-        # merging new and old tables
+        # merging the new table with the old one
         for tracked_id in tracked_issues.keys():
             prs = builder.get_prs(tracked_id)
             if tracked_id in raw_new_table:
                 updated_issue = raw_new_table.pop(tracked_id)
 
-                # update columns using fill function
+                # update columns using a fill function
                 for col in self._columns.names:
                     self._columns.fill_funcs[col](
                         tracked_issues[tracked_id],
@@ -267,7 +267,7 @@ class Spreadsheet:
 
         # convert rows into lists
         for index, row in enumerate(new_table):
-            new_table[index] = row.as_list[: len(self._columns.names) - 1]
+            new_table[index] = row.as_list[: len(self._columns.names)]
 
             for col, color in row.colors.items():
                 requests.append(
