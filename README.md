@@ -6,7 +6,7 @@ GitHub-Scraper automatically builds issues and PRs tables in Google Sheets docum
 * **Adaptive**: change your preferences and add new repos and\or sheets without restarting the scraper
 * **Ongoing**: continue filling on exceptions - scraper will log traceback into file without failing
 
-![image](https://cdn1.imggmi.com/uploads/2019/8/31/412b7ab2c12f86916559343125942f7d-full.png)
+![image](https://github.com/IlyaFaer/GitHub-Scraper/blob/master/GitHubScraperPreview.png?raw=true)
 
 **Setup**  
 To build your first tables and start tracking repositories you need:
