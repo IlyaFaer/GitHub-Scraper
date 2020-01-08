@@ -2,6 +2,7 @@
 Utils for reading data from GitHub and building
 them into structures.
 """
+import datetime
 from github import Github
 from const import YELLOW_RAPS, PINK, PURPLE, PATTERNS
 
@@ -24,6 +25,8 @@ class SheetBuilder:
         self._internal_repos = []
         self._team = []
         self._sheet_id = sheet_id
+        # time when any PR was last updated in specific repo
+        self._last_pr_updates = {}
         self.prs_index = {}
         self.internal_prs_index = {}
 
@@ -73,9 +76,6 @@ class SheetBuilder:
         Args:
             config (dict): Dict with sheet's configurations.
         """
-        self.prs_index = {}
-        self.internal_prs_index = {}
-
         self._repo_names = config["repo_names"]
         self._in_repo_names = config.get("internal_repo_names", {})
 
@@ -126,7 +126,7 @@ class SheetBuilder:
     def _add_into_index(self, repo, repo_lts, lpr, key_exp):
         """Add PR into inner index for future use.
 
-        In table only last PR will be shown.
+        On the spreadsheet only the last PR will be shown.
 
         Args:
             repo (github.Repository.Repository):
@@ -146,14 +146,32 @@ class SheetBuilder:
             if not (issue_num, repo_lts) in self.internal_prs_index:
                 self.internal_prs_index[issue_num, repo_lts] = []
 
-            self.internal_prs_index[issue_num, repo_lts].append(lpr)
+            self._add_or_update_pr(self.internal_prs_index[issue_num, repo_lts], lpr)
         # public PR
         else:
             issue_num = key_exp.split("#")[1]
             if not (issue_num, repo_lts) in self.prs_index:
                 self.prs_index[issue_num, repo_lts] = []
 
-            self.prs_index[issue_num, repo_lts].append(lpr)
+            self._add_or_update_pr(self.prs_index[issue_num, repo_lts], lpr)
+
+    def _add_or_update_pr(self, prs, pr):
+        """Update PR in index or add it into index.
+
+        Args:
+            prs (list): PRs related to a concrete issue.
+            pr (github.PullRequest.PullRequest): Recently updated PR.
+        """
+        is_old = False
+
+        for index, old_pr in enumerate(prs):
+            if old_pr.number == pr.number:
+                prs[index] = pr
+                is_old = True
+                break
+
+        if not is_old:
+            prs.append(pr)
 
     def _get_repo_lts(self, repo):
         """Get repo's short name.
@@ -174,16 +192,29 @@ class SheetBuilder:
     def _index_closed_prs(self, repo):
         """Add closed pull requests into PRs index.
 
+        Method remembers last PR's update time and doesn't
+        indexate PRs which weren't updated since last
+        spreadsheet update.
+
         Args:
             repo (github.Repository.Repository):
                 Repository object.
         """
-        pulls = repo.get_pulls(state="closed", sort="created", direction="desc")
+        pulls = repo.get_pulls(state="closed", sort="updated", direction="desc")
+        if pulls:
+            for pull in pulls:
+                if pull.updated_at < self._last_pr_updates.setdefault(
+                    repo.full_name, datetime.datetime(1, 1, 1)
+                ):
+                    break
 
-        for pull in pulls:
-            key_phrases = self._try_match_keywords(pull.body)
-            for key_phrase in key_phrases:
-                self._add_into_index(repo, self._get_repo_lts(repo), pull, key_phrase)
+                key_phrases = self._try_match_keywords(pull.body)
+                for key_phrase in key_phrases:
+                    self._add_into_index(
+                        repo, self._get_repo_lts(repo), pull, key_phrase
+                    )
+
+            self._last_pr_updates[repo.full_name] = pulls[0].updated_at
 
     def _build_issues_id(self, issue, repo):
         """Designate issue's id. If issue is PR, index it.

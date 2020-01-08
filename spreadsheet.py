@@ -367,7 +367,7 @@ class Spreadsheet:
         self._convert_to_rows(title_row, table)
         sheet_id = self._sheets_ids.get(sheet_name)
 
-        self._columns = Columns(self._config.COLUMNS, sheet_id)
+        self._columns = Columns(self._config.SHEETS[sheet_name]["columns"], sheet_id)
         return build_index(table, title_row)
 
     def _insert_into_sheet(self, sheet_name, rows, start_from):
