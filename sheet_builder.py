@@ -201,7 +201,7 @@ class SheetBuilder:
                 Repository object.
         """
         pulls = repo.get_pulls(state="closed", sort="updated", direction="desc")
-        if pulls:
+        if pulls.totalCount:
             for pull in pulls:
                 if pull.updated_at < self._last_pr_updates.setdefault(
                     repo.full_name, datetime.datetime(1, 1, 1)
