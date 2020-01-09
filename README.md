@@ -15,7 +15,7 @@ To build your first tables and start tracking repositories you need:
 * Create *loginpas.txt* file in scraper's folder and enter your GitHub login and password into it in format: `login/password`. No whitespaces or newlines needed
 * Set your tables configurations in *config.py* file (or use standard)
 * Set filling functions in *fill_funcs.py* file (or use standard)
-* Run *main.py* - scraper will build tables and start tracking specified repositories
+* Run *main.py* - scraper will build tables and start tracking specified repositories. First filling after program start usually takes some time, but subsequent updates will be faster (~50% faster), as Scraper will be processing only recently updated PRs.
 
 **Auto and manual filling**  
 You can tweak spreadsheet filling by (re-)defining filling functions in *fill_funcs.py* file, leaving some columns for manual-only use (for example "Comment").
