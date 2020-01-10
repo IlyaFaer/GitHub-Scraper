@@ -8,6 +8,7 @@ from const import YELLOW_RAPS, PINK, PURPLE, PATTERNS
 
 
 # authenticate in GitHub
+
 with open("loginpas.txt") as login_file:
     login, password = login_file.read().split("/")
 
