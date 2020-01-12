@@ -2,6 +2,7 @@
 Funtions and objects, which uses Google Sheets API to
 build and update issues/PRs tables.
 """
+import logging
 import string
 import sheet_builder
 import auth
@@ -11,14 +12,20 @@ from instances import Columns, Row
 from const import DIGITS_PATTERN
 
 
+logging.basicConfig(
+    filename="logs.txt",
+    format="[%(levelname)s] %(asctime)s: %(message)s",
+    level=logging.INFO,
+)
+
 service = auth.authenticate()
 
 
 class CachedSheetsIds:
     """
-    Class posts request to get all the sheets of specified
-    spreadsheet, and then keeps their ids in inner dict
-    for future needs.
+    Posts request to get all the sheets of the
+    specified spreadsheet, and then keeps their numeric
+    ids in the inner dict for future needs.
 
     Args:
         spreadsheet_id (str):
@@ -32,7 +39,7 @@ class CachedSheetsIds:
         self.update()
 
     def update(self):
-        """Read sheet ids list from the spreadsheet and save them internally."""
+        """Read sheet ids from the spreadsheet and save them internally."""
         resp = service.spreadsheets().get(spreadsheetId=self._spreadsheet_id).execute()
 
         for sheet in resp["sheets"]:
@@ -43,9 +50,9 @@ class CachedSheetsIds:
         """Get sheet's numeric id by it's name.
 
         Args:
-            sheet_name (str): Name of sheet.
+            sheet_name (str): Name of sheet which id should be returned.
 
-        Returns: numeric id of given sheet.
+        Returns: numeric id of the given sheet.
         """
         return self._sheet_ids.get(sheet_name)
 
@@ -67,8 +74,8 @@ class Spreadsheet:
             spreadsheet preferences.
 
         id_ (str):
-            Id of existing spreadsheet. If not given, new
-            spreadsheet will be created.
+            Id of the existing spreadsheet. If not given,
+            new spreadsheet will be created.
     """
 
     def __init__(self, config, id_=None):
@@ -76,73 +83,78 @@ class Spreadsheet:
         self._config = config
         self._columns = []
 
-        if not id_:
-            # creating new spreadsheet with given sheets list
-            spreadsheet = (
-                service.spreadsheets()
-                .create(
-                    body={
-                        "properties": {"title": config.TITLE},
-                        "sheets": _gen_sheets_struct(config.SHEETS.keys()),
-                    }
-                )
-                .execute()
-            )
-            id_ = spreadsheet.get("spreadsheetId")
-
-        self._sheets_ids = CachedSheetsIds(id_)
-        self._id = id_
+        self._id = self._get_or_create(id_)
+        self._sheets_ids = CachedSheetsIds(self._id)
 
     def update_spreadsheet(self):
         """Update spreadsheet structure.
 
-        Rename spreadsheet, if name in config.py had been changed.
-        Add new sheets into spreadsheet, delete sheets deleted
+        Rename spreadsheet, if name in config.py has been changed.
+        Add new sheets into the spreadsheet, delete sheets deleted
         from the configurations.
         """
-        # spreadsheet rename request
-        requests = [
-            {
-                "updateSpreadsheetProperties": {
-                    "properties": {"title": self._config.TITLE},
-                    "fields": "title",
+        try:
+            logging.info("updating spreadsheet")
+            # spreadsheet rename request
+            requests = [
+                {
+                    "updateSpreadsheetProperties": {
+                        "properties": {"title": self._config.TITLE},
+                        "fields": "title",
+                    }
                 }
-            }
-        ]
+            ]
 
-        self._sheets_ids.update()
-        sheets_in_conf = tuple(self._config.SHEETS.keys())
+            self._sheets_ids.update()
+            sheets_in_conf = tuple(self._config.SHEETS.keys())
 
-        # build insert requests for the new sheets
-        new_sheets = False
-        for sheet_name in sheets_in_conf:
-            if not self._sheets_ids.get(sheet_name):
-                new_sheets = True
-                requests.append(
-                    {
-                        "addSheet": {
-                            "properties": {
-                                "title": sheet_name,
-                                "gridProperties": {"rowCount": 1000, "columnCount": 26},
+            # build insert requests for the new sheets
+            new_sheets = False
+            for sheet_name in sheets_in_conf:
+                if not self._sheets_ids.get(sheet_name):
+                    new_sheets = True
+                    requests.append(
+                        {
+                            "addSheet": {
+                                "properties": {
+                                    "title": sheet_name,
+                                    "gridProperties": {
+                                        "rowCount": 1000,
+                                        "columnCount": 26,
+                                    },
+                                }
                             }
                         }
-                    }
-                )
-        # build delete requests for the sheets, which
-        # haven't been found in the configurations
-        del_sheets = False
-        sheets = self._sheets_ids.as_dict
-        for sheet_name in sheets.keys():
-            if sheet_name not in sheets_in_conf:
-                del_sheets = True
-                requests.append({"deleteSheet": {"sheetId": sheets[sheet_name]}})
+                    )
+            # build delete requests for the sheets, which
+            # haven't been found in the configurations
+            del_sheets = False
+            sheets = self._sheets_ids.as_dict
+            for sheet_name in sheets.keys():
+                if sheet_name not in sheets_in_conf:
+                    del_sheets = True
+                    requests.append({"deleteSheet": {"sheetId": sheets[sheet_name]}})
 
-        service.spreadsheets().batchUpdate(
-            spreadsheetId=self._id, body={"requests": requests}
-        ).execute()
+            service.spreadsheets().batchUpdate(
+                spreadsheetId=self._id, body={"requests": requests}
+            ).execute()
 
-        if new_sheets or del_sheets:
-            self._sheets_ids.update()
+            if new_sheets or del_sheets:
+                self._sheets_ids.update()
+
+            logging.info("updated")
+        except Exception:
+            logging.exception("Exception occured:")
+
+    def update_all_sheets(self):
+        """Update all sheets from the configurations one by one."""
+        for sheet_name in self._config.SHEETS.keys():
+            logging.info("updating " + sheet_name)
+            try:
+                self.update_sheet(sheet_name)
+                logging.info("updated")
+            except Exception:
+                logging.exception("Exception occured:")
 
     def update_sheet(self, sheet_name):
         """Update specified sheet with issues/PRs data.
@@ -151,7 +163,7 @@ class Spreadsheet:
             sheet_name (str): Name of the sheet to be updated.
         """
         # build new table from the repositories specified in config.py
-        builder = self._get_sheet_builder(sheet_name)
+        builder = self._builders.setdefault(sheet_name, sheet_builder.SheetBuilder())
         builder.update_config(self._config.SHEETS[sheet_name])
         raw_new_table = builder.build_table()
 
@@ -214,6 +226,30 @@ class Spreadsheet:
                 Imported config.py module with all preferences.
         """
         self._config = config
+
+    def _get_or_create(self, id_):
+        """Return id_ if passed. Create new spreadsheet otherwise.
+
+        Args:
+            id_ (str): Spreadsheet id.
+
+        Returns:
+            str: spreadsheet id.
+        """
+        if not id_:
+            # creating new spreadsheet with given sheets list
+            spreadsheet = (
+                service.spreadsheets()
+                .create(
+                    body={
+                        "properties": {"title": self._config.TITLE},
+                        "sheets": _gen_sheets_struct(self._config.SHEETS.keys()),
+                    }
+                )
+                .execute()
+            )
+            id_ = spreadsheet.get("spreadsheetId")
+        return id_
 
     def _clear_range(self, sheet_name, length):
         """Delete data from last cell to the end.
@@ -279,25 +315,6 @@ class Spreadsheet:
                     )
                 )
         return new_table, requests
-
-    def _get_sheet_builder(self, sheet_name):
-        """Return builder for specified sheet.
-
-        If builder already created, it'll be taken from
-        inner index. Otherwise, it'll be created.
-
-        Args:
-            sheet_name (str):
-                Name of sheet, for which builder
-                must be taken/created.
-
-        Returns: SheetBuilder linked with the given sheet.
-        """
-        if sheet_name not in self._builders:
-            sheet_id = self._sheets_ids.get(sheet_name)
-            self._builders[sheet_name] = sheet_builder.SheetBuilder(sheet_id)
-
-        return self._builders[sheet_name]
 
     def _insert_new_issues(self, tracked_issues, new_issues, sheet_name):
         """Insert new issues into tracked issues index.
@@ -423,6 +440,7 @@ def build_index(table, column_names):
     }
 
     Args:
+        table (list): Lists, each of which represents single row.
         column_names (list): Tracked columns names.
 
     Returns: Dict, which values represents rows.
@@ -441,9 +459,9 @@ def _gen_sheets_struct(sheets_config):
     Args:
         sheets_config (dict): Sheets preferences.
 
-    Returns: list of dicts, each of which represents
-        structure for passing into Google Spreadsheet API
-        requests.
+    Returns:
+        List of dicts, each of which represents structure
+        for passing into Google Spreadsheet API requests.
     """
     sheets = []
 

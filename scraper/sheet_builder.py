@@ -1,6 +1,6 @@
 """
 Utils for reading data from GitHub and building
-them into structures.
+them into convenient structures.
 """
 import datetime
 from github import Github
@@ -8,7 +8,6 @@ from const import YELLOW_RAPS, PINK, PURPLE, PATTERNS
 
 
 # authenticate in GitHub
-
 with open("loginpas.txt") as login_file:
     login, password = login_file.read().split("/")
 
@@ -18,14 +17,12 @@ gh_client = Github(login, password)
 class SheetBuilder:
     """Class that builds table of issues/PRs from specified repos."""
 
-    def __init__(self, sheet_id):
+    def __init__(self):
         self._repos = {}
         self._repo_names = {}
         self._in_repo_names = {}
         self._repo_names_inverse = {}
         self._internal_repos = []
-        self._team = []
-        self._sheet_id = sheet_id
         # time when any PR was last updated in specific repo
         self._last_pr_updates = {}
         self.prs_index = {}
@@ -43,7 +40,7 @@ class SheetBuilder:
         repo_names = list(self._repo_names.keys()) + list(self._in_repo_names.keys())
 
         for repo_name in repo_names:
-            repo = self._get_repo(repo_name)
+            repo = self._repos.setdefault(repo_name, gh_client.get_repo(repo_name))
             self._index_closed_prs(repo)
 
             # process open PRs and issues
@@ -81,9 +78,7 @@ class SheetBuilder:
         self._in_repo_names = config.get("internal_repo_names", {})
 
         self._internal_repos = list(self._in_repo_names.keys())
-
         self._repo_names_inverse = dict((v, k) for k, v in self._repo_names.items())
-        self._team = config["team"]
 
     def get_prs(self, issue_id):
         """Return internal and public pull requests of specified issue.
@@ -105,24 +100,6 @@ class SheetBuilder:
         prs["internal"].sort(key=sort_pull_requests, reverse=True)
 
         return prs
-
-    def _get_repo(self, repo_name):
-        """Return repo object by name.
-
-        If repo object already created, it'll be returned
-        from inner index. Otherwise, it'll be created.
-
-        Args:
-            repo_name (str): Repo name.
-
-        Returns: github.Repository.Repository object.
-        """
-        repo = self._repos.get(repo_name)
-        if repo is None:
-            repo = gh_client.get_repo(repo_name)
-            self._repos[repo_name] = repo
-
-        return repo
 
     def _add_into_index(self, repo, repo_lts, lpr, key_exp):
         """Add PR into inner index for future use.

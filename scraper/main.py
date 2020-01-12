@@ -7,16 +7,9 @@ config.py module to get new preferences and filling functions.
 """
 import time
 import importlib
-import logging
 import config
 from spreadsheet import Spreadsheet
 
-
-logging.basicConfig(
-    filename="logs.txt",
-    format="[%(levelname)s] %(asctime)s: %(message)s",
-    level=logging.INFO,
-)
 
 # this id is QLogic internal - redefine to None
 # to build your own spreadsheet
@@ -24,30 +17,16 @@ spreadsheet_id = "1Z9QoQ8xUoOtHVUtrtLV6T78J30jvQS4uE0G4AK2Bhkc"
 # spreadsheet_id = None
 spreadsheet = Spreadsheet(config, spreadsheet_id)
 
-# updating table at specified period
-# if exception raised, log it and continue
+# updating spreadsheet at specified period
 while True:
     # reload configurations and constants
+    # before updating the spreadsheet
     config.fill_funcs = importlib.reload(config.fill_funcs)
     config.const = importlib.reload(config.const)
     config = importlib.reload(config)
     spreadsheet.reload_config(config)
 
-    # update spreadsheet structure
-    try:
-        logging.info("updating spreadsheet")
-        spreadsheet.update_spreadsheet()
-        logging.info("updated")
-    except Exception:
-        logging.exception("Exception occured:")
-
-    # update data in every sheet
-    for sheet_name in config.SHEETS.keys():
-        logging.info("updating " + sheet_name)
-        try:
-            spreadsheet.update_sheet(sheet_name)
-            logging.info("updated")
-        except Exception:
-            logging.exception("Exception occured:")
+    spreadsheet.update_spreadsheet()
+    spreadsheet.update_all_sheets()
 
     time.sleep(config.UPDATE_PERIODICITY)
