@@ -1,3 +1,11 @@
+"""
+Module which contains functions for PR processing
+and indexating.
+"""
+import datetime
+from utils import try_match_keywords
+
+
 class PullRequestsIndex(dict):
     """Pull requests index.
 
@@ -14,6 +22,8 @@ class PullRequestsIndex(dict):
         super().__init__()
         self["internal"] = {}
         self["public"] = {}
+        # time when any PR was last updated in specific repo
+        self._last_pr_updates = {}
 
     def update_config(self, in_repo_names):
         """Update list of internal repos.
@@ -43,6 +53,32 @@ class PullRequestsIndex(dict):
         prs["public"] = self["public"].get(issue_id, [])
         prs["public"].sort(key=sort_pull_requests, reverse=True)
         return prs
+
+    def index_closed_prs(self, repo, repo_lts):
+        """Add closed pull requests into PRs index.
+
+        Method remembers last PR's update time and doesn't
+        indexate PRs which weren't updated since last
+        spreadsheet update.
+
+        Args:
+            repo (github.Repository.Repository):
+                Repository object.
+            repo (str): Repo short name.
+        """
+        pulls = repo.get_pulls(state="closed", sort="updated", direction="desc")
+        if pulls.totalCount:
+            for pull in pulls:
+                if pull.updated_at < self._last_pr_updates.setdefault(
+                    repo.full_name, datetime.datetime(1, 1, 1)
+                ):
+                    break
+
+                key_phrases = try_match_keywords(pull.body)
+                for key_phrase in key_phrases:
+                    self.add(repo, repo_lts, pull, key_phrase)
+
+            self._last_pr_updates[repo.full_name] = pulls[0].updated_at
 
     def add(self, repo, repo_lts, lpr, key_exp):
         """Designate the proper index and add PR into it."""

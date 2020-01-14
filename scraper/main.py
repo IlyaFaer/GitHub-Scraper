@@ -24,9 +24,9 @@ while True:
     config.fill_funcs = importlib.reload(config.fill_funcs)
     config.const = importlib.reload(config.const)
     config = importlib.reload(config)
-    spreadsheet.reload_config(config)
 
-    spreadsheet.update_spreadsheet()
+    spreadsheet.reload_config(config)
+    spreadsheet.update_structure()
     spreadsheet.update_all_sheets()
 
     time.sleep(config.UPDATE_PERIODICITY)

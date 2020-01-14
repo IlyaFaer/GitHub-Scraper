@@ -1,28 +1,5 @@
 """Some utils for tracker."""
-from const import NUM_REGEX
-
-
-def gen_color_request(sheet_id, row, column, color):
-    """Request, that changes color of specified cell."""
-    request = {
-        "repeatCell": {
-            "fields": "userEnteredFormat",
-            "range": {
-                "sheetId": sheet_id,
-                "startRowIndex": row,
-                "endRowIndex": row + 1,
-                "startColumnIndex": column,
-                "endColumnIndex": column + 1,
-            },
-            "cell": {
-                "userEnteredFormat": {
-                    "backgroundColor": color,
-                    "horizontalAlignment": "CENTER",
-                }
-            },
-        }
-    }
-    return request
+from const import NUM_REGEX, PATTERNS, YELLOW_RAPS, PINK, PURPLE
 
 
 def get_num_from_url(url):
@@ -36,11 +13,8 @@ def get_num_from_url(url):
     """
     match = NUM_REGEX.search(url)
     if match is not None:
-        result = match.group("num").replace('"', "")
-    else:
-        result = url
-
-    return result
+        return match.group("num").replace('"', "")
+    return url
 
 
 def build_url_formula(issue):
@@ -54,3 +28,37 @@ def build_url_formula(issue):
     """
     url = '=HYPERLINK("{url}";"{num}")'.format(num=issue.number, url=issue.html_url)
     return url
+
+
+def try_match_keywords(body):
+    """Try to find keywords in issue's body.
+
+    Args:
+        body (str): Issue's body.
+
+    Returns: List of key phrases with issue numbers, if found.
+    """
+    result = []
+    if body:
+        for pattern in PATTERNS:
+            result += pattern.findall(body)
+    return result
+
+
+def designate_status_color(pull, team):
+    """Check PR's status and return corresponding color.
+
+    Args:
+        pull (github.PullRequest.PullRequest):
+            Pull request object.
+    """
+    status = None
+
+    if pull.merged:
+        status = PURPLE
+    elif pull.state == "closed" and not pull.merged:
+        status = PINK
+    elif pull.user.login not in team:
+        status = YELLOW_RAPS
+
+    return status
