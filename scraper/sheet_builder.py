@@ -3,8 +3,9 @@ Utils for reading data from GitHub and building
 them into convenient structures.
 """
 import datetime
-from github import Github
 from const import YELLOW_RAPS, PINK, PURPLE, PATTERNS
+from github import Github
+from pr_index import PullRequestsIndex
 
 
 # authenticate in GitHub
@@ -22,11 +23,9 @@ class SheetBuilder:
         self._repo_names = {}
         self._in_repo_names = {}
         self._repo_names_inverse = {}
-        self._internal_repos = []
         # time when any PR was last updated in specific repo
         self._last_pr_updates = {}
-        self.prs_index = {}
-        self.internal_prs_index = {}
+        self.prs_index = PullRequestsIndex()
 
     def build_table(self):
         """Build list of issues/PRs from given repositories.
@@ -77,10 +76,10 @@ class SheetBuilder:
         self._repo_names = config["repo_names"]
         self._in_repo_names = config.get("internal_repo_names", {})
 
-        self._internal_repos = list(self._in_repo_names.keys())
+        self.prs_index.update_config(self._in_repo_names)
         self._repo_names_inverse = dict((v, k) for k, v in self._repo_names.items())
 
-    def get_prs(self, issue_id):
+    def get_related_prs(self, issue_id):
         """Return internal and public pull requests of specified issue.
 
         Args:
@@ -91,65 +90,7 @@ class SheetBuilder:
                 All of the internal and public pull requests
                 related to the specified issue.
         """
-        prs = {}
-
-        prs["public"] = self.prs_index.get(issue_id, [])
-        prs["public"].sort(key=sort_pull_requests, reverse=True)
-
-        prs["internal"] = self.internal_prs_index.get(issue_id, [])
-        prs["internal"].sort(key=sort_pull_requests, reverse=True)
-
-        return prs
-
-    def _add_into_index(self, repo, repo_lts, lpr, key_exp):
-        """Add PR into inner index for future use.
-
-        On the spreadsheet only the last PR will be shown.
-
-        Args:
-            repo (github.Repository.Repository):
-                Repository object.
-
-            repo_lts (str): Short repo name.
-
-            lpr (github.PullRequest.PullRequest):
-                Pull request object.
-
-            key_exp (str): Key expression, that contains
-                linked issue number.
-        """
-        # internal PR
-        if repo.full_name in self._internal_repos:
-            issue_num = key_exp.split()[1]
-            if not (issue_num, repo_lts) in self.internal_prs_index:
-                self.internal_prs_index[issue_num, repo_lts] = []
-
-            self._add_or_update_pr(self.internal_prs_index[issue_num, repo_lts], lpr)
-        # public PR
-        else:
-            issue_num = key_exp.split("#")[1]
-            if not (issue_num, repo_lts) in self.prs_index:
-                self.prs_index[issue_num, repo_lts] = []
-
-            self._add_or_update_pr(self.prs_index[issue_num, repo_lts], lpr)
-
-    def _add_or_update_pr(self, prs, pr):
-        """Update PR in index or add it into index.
-
-        Args:
-            prs (list): PRs related to a concrete issue.
-            pr (github.PullRequest.PullRequest): Recently updated PR.
-        """
-        is_old = False
-
-        for index, old_pr in enumerate(prs):
-            if old_pr.number == pr.number:
-                prs[index] = pr
-                is_old = True
-                break
-
-        if not is_old:
-            prs.append(pr)
+        return self.prs_index.get_related_prs(issue_id)
 
     def _get_repo_lts(self, repo):
         """Get repo's short name.
@@ -188,9 +129,7 @@ class SheetBuilder:
 
                 key_phrases = self._try_match_keywords(pull.body)
                 for key_phrase in key_phrases:
-                    self._add_into_index(
-                        repo, self._get_repo_lts(repo), pull, key_phrase
-                    )
+                    self.prs_index.add(repo, self._get_repo_lts(repo), pull, key_phrase)
 
             self._last_pr_updates[repo.full_name] = pulls[0].updated_at
 
@@ -214,9 +153,7 @@ class SheetBuilder:
             # add PR into index
             key_phrases = self._try_match_keywords(issue.body)
             for key_phrase in key_phrases:
-                self._add_into_index(
-                    repo, repo_lts, issue.as_pull_request(), key_phrase
-                )
+                self.prs_index.add(repo, repo_lts, issue.as_pull_request(), key_phrase)
         return id_
 
     def _try_match_keywords(self, body):
@@ -232,11 +169,6 @@ class SheetBuilder:
             for pattern in PATTERNS:
                 result += pattern.findall(body)
         return result
-
-
-def sort_pull_requests(pull_request):
-    """Sort pull requests by their creation date."""
-    return pull_request.created_at
 
 
 def designate_status_color(pull, team):

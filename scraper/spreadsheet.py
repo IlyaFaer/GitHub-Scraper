@@ -173,7 +173,7 @@ class Spreadsheet:
         to_be_deleted = []
         # merging the new table with the old one
         for tracked_id in tracked_issues.keys():
-            prs = builder.get_prs(tracked_id)
+            prs = builder.get_related_prs(tracked_id)
             if tracked_id in raw_new_table:
                 updated_issue = raw_new_table.pop(tracked_id)
 
@@ -325,7 +325,7 @@ class Spreadsheet:
         """
         for new_id in new_issues.keys():
             tracked_issues[new_id] = Row(self._columns.names)
-            prs = self._builders[sheet_name].get_prs(new_id)
+            prs = self._builders[sheet_name].get_related_prs(new_id)
 
             for col in self._columns.names:
                 self._columns.fill_funcs[col](
