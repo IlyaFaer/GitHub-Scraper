@@ -22,9 +22,8 @@ Pull requests are sorted by creation date (DESC).
 is_new (bool): New issue in table.
 """
 import datetime
-from utils import build_url_formula
-from sheet_builder import designate_status_color
 from const import GREY
+from utils import build_url_formula, designate_status_color
 
 
 def fill_priority(old_issue, issue, sheet_name, sheet_config, prs, is_new):

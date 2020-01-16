@@ -7,7 +7,7 @@ import string
 import sheet_builder
 import auth
 import fill_funcs
-from utils import gen_color_request, get_num_from_url
+from utils import get_num_from_url
 from instances import Columns, Row
 from const import DIGITS_PATTERN
 
@@ -86,7 +86,7 @@ class Spreadsheet:
         self._id = self._get_or_create(id_)
         self._sheets_ids = CachedSheetsIds(self._id)
 
-    def update_spreadsheet(self):
+    def update_structure(self):
         """Update spreadsheet structure.
 
         Rename spreadsheet, if name in config.py has been changed.
@@ -167,17 +167,19 @@ class Spreadsheet:
         builder.update_config(self._config.SHEETS[sheet_name])
         raw_new_table = builder.build_table()
 
-        # read existing data from the sheet
         tracked_issues = self._read_sheet(sheet_name)
 
         to_be_deleted = []
         # merging the new table with the old one
         for tracked_id in tracked_issues.keys():
-            prs = builder.get_prs(tracked_id)
+            prs = builder.get_related_prs(tracked_id)
             if tracked_id in raw_new_table:
                 updated_issue = raw_new_table.pop(tracked_id)
+            else:
+                updated_issue = builder.read_issue(*tracked_id)
 
-                # update columns using a fill function
+            if updated_issue:
+                # update columns using fill function
                 for col in self._columns.names:
                     self._columns.fill_funcs[col](
                         tracked_issues[tracked_id],
@@ -187,19 +189,7 @@ class Spreadsheet:
                         prs,
                         False,
                     )
-            else:
-                updated_issue = builder.read_issue(*tracked_id)
-                if updated_issue:
-                    # update columns using fill function
-                    for col in self._columns.names:
-                        self._columns.fill_funcs[col](
-                            tracked_issues[tracked_id],
-                            updated_issue,
-                            sheet_name,
-                            self._config.SHEETS[sheet_name],
-                            prs,
-                            False,
-                        )
+
             to_del = fill_funcs.to_be_deleted(
                 tracked_issues[tracked_id], updated_issue, prs
             )
@@ -307,7 +297,7 @@ class Spreadsheet:
 
             for col, color in row.colors.items():
                 requests.append(
-                    gen_color_request(
+                    _gen_color_request(
                         self._sheets_ids.get(sheet_name),
                         index + 1,
                         self._columns.names.index(col),
@@ -325,7 +315,7 @@ class Spreadsheet:
         """
         for new_id in new_issues.keys():
             tracked_issues[new_id] = Row(self._columns.names)
-            prs = self._builders[sheet_name].get_prs(new_id)
+            prs = self._builders[sheet_name].get_related_prs(new_id)
 
             for col in self._columns.names:
                 self._columns.fill_funcs[col](
@@ -336,18 +326,6 @@ class Spreadsheet:
                     prs,
                     True,
                 )
-
-    def _convert_to_rows(self, title_row, table):
-        """Convert every list into Row.
-
-        Args:
-            title_row (list): Tracked columns.
-            table (list): Lists, eah of which represents single row.
-        """
-        for index, row in enumerate(table):
-            new_row = Row(title_row)
-            new_row.fill_from_list(row)
-            table[index] = new_row
 
     def _read_sheet(self, sheet_name):
         """
@@ -381,11 +359,11 @@ class Spreadsheet:
             )
         title_row, table = table[0], table[1:]
 
-        self._convert_to_rows(title_row, table)
+        _convert_to_rows(title_row, table)
         sheet_id = self._sheets_ids.get(sheet_name)
 
         self._columns = Columns(self._config.SHEETS[sheet_name]["columns"], sheet_id)
-        return build_index(table, title_row)
+        return _build_index(table, title_row)
 
     def _insert_into_sheet(self, sheet_name, rows, start_from):
         """Write new data into specified sheet.
@@ -425,14 +403,12 @@ class Spreadsheet:
                 Dicts, each of which represents single request.
         """
         if requests:
-            body = {"requests": requests}
-
             service.spreadsheets().batchUpdate(
-                spreadsheetId=self._id, body=body
+                spreadsheetId=self._id, body={"requests": requests}
             ).execute()
 
 
-def build_index(table, column_names):
+def _build_index(table, column_names):
     """
     Build dict containing:
     {
@@ -453,6 +429,19 @@ def build_index(table, column_names):
     return index
 
 
+def _convert_to_rows(title_row, table):
+    """Convert every list into Row.
+
+    Args:
+        title_row (list): Tracked columns.
+        table (list): Lists, eah of which represents single row.
+    """
+    for index, row in enumerate(table):
+        new_row = Row(title_row)
+        new_row.fill_from_list(row)
+        table[index] = new_row
+
+
 def _gen_sheets_struct(sheets_config):
     """Build dicts with sheet's preferences.
 
@@ -469,3 +458,26 @@ def _gen_sheets_struct(sheets_config):
         sheets.append({"properties": {"title": sheet_name}})
 
     return sheets
+
+
+def _gen_color_request(sheet_id, row, column, color):
+    """Request, that changes color of specified cell."""
+    request = {
+        "repeatCell": {
+            "fields": "userEnteredFormat",
+            "range": {
+                "sheetId": sheet_id,
+                "startRowIndex": row,
+                "endRowIndex": row + 1,
+                "startColumnIndex": column,
+                "endColumnIndex": column + 1,
+            },
+            "cell": {
+                "userEnteredFormat": {
+                    "backgroundColor": color,
+                    "horizontalAlignment": "CENTER",
+                }
+            },
+        }
+    }
+    return request
