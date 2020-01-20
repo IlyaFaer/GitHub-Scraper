@@ -17,6 +17,8 @@ To build your first tables and start tracking repositories you need:
 * Set filling functions in *fill_funcs.py* file (or use standard)
 * Run *main.py* - scraper will build tables and start tracking specified repositories. First filling after program start usually takes some time, but subsequent updates will be faster (~50% faster), as Scraper will be processing only recently updated PRs.
 
+If you're getting any problem while filling, check *logs.txt* file for traceback, and feel free to create an issue.
+
 **Auto and manual filling**  
 You can tweak spreadsheet filling by (re-)defining filling functions in *fill_funcs.py* file, leaving some columns for manual-only use (for example "Comment").
 
