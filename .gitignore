@@ -1,6 +1,7 @@
 __pycache__/
 config.py
 credentials.json
+fill_funcs.py
 launch.json
 loginpas.txt
 logs.txt
