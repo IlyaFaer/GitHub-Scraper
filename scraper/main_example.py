@@ -1,4 +1,7 @@
-"""Tracker's main program.
+"""Tracker's main program example.
+
+Create your own main.py to use Scraper.
+Your main.py will not be Git-tracked.
 
 It creates Google spreadsheet according to a structure
 described in config.py file, and then updates it at
@@ -11,8 +14,8 @@ import config
 from spreadsheet import Spreadsheet
 
 
-# this id is QLogic internal - redefine to None
-# to build your own spreadsheet
+# TODO: set the existing spreadsheet id, or
+# None if new spreadsheet wanted to be created
 spreadsheet_id = "1Z9QoQ8xUoOtHVUtrtLV6T78J30jvQS4uE0G4AK2Bhkc"
 # spreadsheet_id = None
 spreadsheet = Spreadsheet(config, spreadsheet_id)

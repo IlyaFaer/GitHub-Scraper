@@ -3,5 +3,6 @@ credentials.json
 launch.json
 loginpas.txt
 logs.txt
+main.py
 settings.json
 token.pickle
