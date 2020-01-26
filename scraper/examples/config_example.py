@@ -26,7 +26,7 @@ projects_labels = {
 
 # TODO: set your spreadsheet title
 TITLE = "QLogic Issue Tracker"
-# TODO: set duration of pause between updates
+# TODO: set duration of a pause between updates
 UPDATE_PERIODICITY = 3600  # one hour
 
 # TODO: set your table structure
