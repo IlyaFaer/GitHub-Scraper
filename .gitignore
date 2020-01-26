@@ -1,4 +1,5 @@
 __pycache__/
+config.py
 credentials.json
 launch.json
 loginpas.txt

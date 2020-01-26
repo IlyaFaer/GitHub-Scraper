@@ -1,6 +1,9 @@
 """
 File describes spreadsheet's architecture, including
 columns style, data validation, tracked repositories, etc.
+
+This is a configurations example. Create and tweak your
+own config.py. Your config.py will not be Git-tracked.
 """
 import copy
 from utils import get_num_from_url
@@ -21,17 +24,23 @@ projects_labels = {
     "api: datastore": "Datastore",
 }
 
-TITLE = "QLogic Issue Tracker"  # spreadsheet title
-UPDATE_PERIODICITY = 3600  # duration of pause between updates
+# TODO: set your spreadsheet title
+TITLE = "QLogic Issue Tracker"
+# TODO: set duration of pause between updates
+UPDATE_PERIODICITY = 3600  # one hour
 
-# columns structure
+# TODO: set your table structure
 COLUMNS = [
     {
-        "name": "Priority",
+        "name": "Priority",  # column title
         "width": 80,
-        "align": "CENTER",
+        "align": "CENTER",  # text alignment
+        # function which sets a value of a
+        # single one cell in this column
         "fill_func": fill_funcs.fill_priority,
-        "values": {  # possible values with their colors
+        # possible values with their colors
+        # column will become drop-down list
+        "values": {
             "Closed": const.GREY,
             "Low": const.GREEN,
             "Medium": const.BLUE,
@@ -89,13 +98,12 @@ COLUMNS = [
 GO_COLUMNS = copy.copy(COLUMNS)
 GO_COLUMNS.pop(8)
 
-# sheets structure
+# TODO: set your spreadsheet structure
 SHEETS = {
     # -----------------------------
     "Python": {  # sheet name
         "labels": projects_labels,  # meaningful labels
-        # repos to track
-        "repo_names": {
+        "repo_names": {  # repos to track on this sheet
             "googleapis/google-cloud-python": "GCP",
             "googleapis/google-resumable-media-python": "GRMP",
         },
@@ -103,11 +111,10 @@ SHEETS = {
             "q-logic/google-cloud-python": "GCP",
             "q-logic/google-resumable-media-python": "GRMP",
         },
-        "team": [  # team, that works in this repos
+        "team": [  # people, who works in this repos
             "IlyaFaer",
             "HemangChothani",
             "mf2199",
-            "sumit-ql",
             "sangramql",
             "Emar-Kar",
             "paul1319",
@@ -237,9 +244,9 @@ SHEETS = {
 
 
 def sort_func(row):
-    """Function sorts data within sheet.
+    """Sorts data within single one sheet.
 
     Args:
-        row (dict): Dict representation of single row.
+        row (dict): Dict representation of a single row.
     """
     return row["Repository"], row["Project"], int(get_num_from_url(row["Issue"]))
