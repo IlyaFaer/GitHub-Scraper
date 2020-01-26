@@ -156,7 +156,7 @@ SHEETS = {
         "labels": projects_labels,
         "repo_names": {"googleapis/google-cloud-php": "GCPHP"},
         "internal_repo_names": {"q-logic/google-cloud-php": "GCPHP"},
-        "team": ["andrewinc", "Other", "N/A"],
+        "team": ["andrewinc", "ava12", "Other", "N/A"],
         "columns": COLUMNS,
     },
     "Java": {

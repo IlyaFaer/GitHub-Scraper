@@ -172,11 +172,18 @@ class Spreadsheet:
         to_be_deleted = []
         # merging the new table with the old one
         for tracked_id in tracked_issues.keys():
+            updated_issue = None
             prs = builder.get_related_prs(tracked_id)
             if tracked_id in raw_new_table:
                 updated_issue = raw_new_table.pop(tracked_id)
-            else:
+            # on a first update check old (closed issues included)
+            # rows too in case of Scraper restarts
+            elif builder.first_update:
                 updated_issue = builder.read_issue(*tracked_id)
+            # if issue wasn't updated, take it's last
+            # version from internal index
+            else:
+                updated_issue = builder.get_from_index(tracked_id)
 
             if updated_issue:
                 # update columns using fill function
@@ -198,6 +205,7 @@ class Spreadsheet:
 
         for id_ in to_be_deleted:
             tracked_issues.pop(id_)
+            builder.delete_from_index(id_)
 
         self._insert_new_issues(tracked_issues, raw_new_table, sheet_name)
         new_table, requests = self._rows_to_lists(tracked_issues.values(), sheet_name)
@@ -207,6 +215,7 @@ class Spreadsheet:
 
         self._clear_range(sheet_name, len(tracked_issues))
         self._apply_formating_data(requests)
+        builder.first_update = False
 
     def reload_config(self, config):
         """Load config.py module into spreadsheet object.

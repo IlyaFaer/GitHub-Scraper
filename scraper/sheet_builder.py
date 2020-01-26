@@ -25,7 +25,13 @@ class SheetBuilder:
         self._repo_names_inverse = {}
         # time when any PR was last updated in specific repo
         self._last_pr_updates = {}
+        # time when any issue was last updated in specific repo
+        self._last_issue_updates = {}
         self.prs_index = PullRequestsIndex()
+        # dict in which we aggregate all of the issue objects
+        # used to avoid re-reading unupdated issues from GitHub
+        self._issues_index = {}
+        self.first_update = True
 
     def build_table(self):
         """Build list of issues/PRs from given repositories.
@@ -42,13 +48,49 @@ class SheetBuilder:
             repo = self._repos.setdefault(repo_name, gh_client.get_repo(repo_name))
             self._index_closed_prs(repo)
 
-            # process open PRs and issues
-            for issue in repo.get_issues():
+            args = {}
+            if repo_name in self._last_issue_updates:
+                args = {
+                    "sort": "updated",
+                    "direction": "desc",
+                    "since": self._last_issue_updates[repo_name],
+                    "state": "all",
+                }
+
+            # process issues from the repo
+            for issue in repo.get_issues(**args):
                 id_ = self._build_issues_id(issue, repo)
                 if id_:
                     issue_index[id_] = issue
 
+                last_issue_update = self._last_issue_updates.setdefault(
+                    repo_name, datetime.datetime(1, 1, 1)
+                )
+                self._last_issue_updates[repo_name] = max(
+                    last_issue_update, issue.updated_at
+                )
+
+        self._issues_index.update(issue_index)
         return issue_index
+
+    def get_from_index(self, tracked_id):
+        """Get issue object saved in internal index.
+
+        Args:
+            tracked_id (list): Issue number and repo short name.
+
+        Returns:
+            github.Issue.Issue: Issue object from index.
+        """
+        return self._issues_index.get(tracked_id)
+
+    def delete_from_index(self, tracked_id):
+        """Delete issue from internal index.
+
+        Args:
+            tracked_id (list): Issue number and repo short name.
+        """
+        self._issues_index.pop(tracked_id)
 
     def read_issue(self, issue_num, repo_lts):
         """Read issue by it's number and repository short name.
@@ -65,7 +107,9 @@ class SheetBuilder:
             return
 
         repo = self._repos.get(repo_name)
-        return repo.get_issue(int(issue_num))
+        issue = repo.get_issue(int(issue_num))
+        self._issues_index[(issue_num, repo_lts)] = issue
+        return issue
 
     def update_config(self, config):
         """Update builder's configurations.
