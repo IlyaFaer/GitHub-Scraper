@@ -17,7 +17,6 @@ from spreadsheet import Spreadsheet
 # TODO: set the existing spreadsheet id, or
 # None if new spreadsheet wanted to be created
 spreadsheet_id = "1Z9QoQ8xUoOtHVUtrtLV6T78J30jvQS4uE0G4AK2Bhkc"
-# spreadsheet_id = None
 spreadsheet = Spreadsheet(config, spreadsheet_id)
 
 # updating spreadsheet at specified period
