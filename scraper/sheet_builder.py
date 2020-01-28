@@ -8,13 +8,6 @@ from github import Github
 from pr_index import PullRequestsIndex
 
 
-# authenticate in GitHub
-with open("loginpas.txt") as login_file:
-    login, password = login_file.read().split("/")
-
-gh_client = Github(login, password)
-
-
 class SheetBuilder:
     """Class that builds table of issues/PRs from specified repos."""
 
@@ -32,6 +25,7 @@ class SheetBuilder:
         # used to avoid re-reading unupdated issues from GitHub
         self._issues_index = {}
         self.first_update = True
+        self._login_on_github()
 
     def build_table(self):
         """Build list of issues/PRs from given repositories.
@@ -45,7 +39,9 @@ class SheetBuilder:
         repo_names = list(self._repo_names.keys()) + list(self._in_repo_names.keys())
 
         for repo_name in repo_names:
-            repo = self._repos.setdefault(repo_name, gh_client.get_repo(repo_name))
+            repo = self._repos.setdefault(
+                repo_name, self._gh_client.get_repo(repo_name)
+            )
             self._index_closed_prs(repo)
 
             args = {}
@@ -151,6 +147,13 @@ class SheetBuilder:
             repo_lts = self._in_repo_names.get(repo.full_name)
 
         return repo_lts
+
+    def _login_on_github(self):
+        """Authenticate in GitHub."""
+        with open("loginpas.txt") as login_file:
+            login, password = login_file.read().split("/")
+
+        self._gh_client = Github(login, password)
 
     def _index_closed_prs(self, repo):
         """Add closed pull requests into PRs index.

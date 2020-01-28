@@ -18,8 +18,6 @@ logging.basicConfig(
     level=logging.INFO,
 )
 
-service = auth.authenticate()
-
 
 class CachedSheetsIds:
     """
@@ -32,15 +30,16 @@ class CachedSheetsIds:
             Id of a spreadsheet, which sheets must be cached.
     """
 
-    def __init__(self, spreadsheet_id):
+    def __init__(self, resource, spreadsheet_id):
         self._sheet_ids = {}
+        self._ss_resource = resource
         self._spreadsheet_id = spreadsheet_id
 
         self.update()
 
     def update(self):
         """Read sheet ids from the spreadsheet and save them internally."""
-        resp = service.spreadsheets().get(spreadsheetId=self._spreadsheet_id).execute()
+        resp = self._ss_resource.get(spreadsheetId=self._spreadsheet_id).execute()
 
         for sheet in resp["sheets"]:
             props = sheet["properties"]
@@ -82,9 +81,11 @@ class Spreadsheet:
         self._builders = {}  # list of builders for every sheet
         self._config = config
         self._columns = []
+        self._ss_resource = None
 
-        self._id = self._get_or_create(id_)
-        self._sheets_ids = CachedSheetsIds(self._id)
+        self._login_on_google()
+        self._id = id_ or self._create_spreadsheet()
+        self._sheets_ids = CachedSheetsIds(self._ss_resource, self._id)
 
     def update_structure(self):
         """Update spreadsheet structure.
@@ -135,7 +136,7 @@ class Spreadsheet:
                     del_sheets = True
                     requests.append({"deleteSheet": {"sheetId": sheets[sheet_name]}})
 
-            service.spreadsheets().batchUpdate(
+            self._ss_resource.batchUpdate(
                 spreadsheetId=self._id, body={"requests": requests}
             ).execute()
 
@@ -226,29 +227,23 @@ class Spreadsheet:
         """
         self._config = config
 
-    def _get_or_create(self, id_):
-        """Return id_ if passed. Create new spreadsheet otherwise.
+    def _login_on_google(self):
+        """Login on Google Spreadsheet service."""
+        self._ss_resource = auth.authenticate().spreadsheets()
 
-        Args:
-            id_ (str): Spreadsheet id.
+    def _create_spreadsheet(self):
+        """Create new spreadsheet according to config.
 
         Returns:
-            str: spreadsheet id.
+            str: The new spreadsheet id.
         """
-        if not id_:
-            # creating new spreadsheet with given sheets list
-            spreadsheet = (
-                service.spreadsheets()
-                .create(
-                    body={
-                        "properties": {"title": self._config.TITLE},
-                        "sheets": _gen_sheets_struct(self._config.SHEETS.keys()),
-                    }
-                )
-                .execute()
-            )
-            id_ = spreadsheet.get("spreadsheetId")
-        return id_
+        spreadsheet = self._ss_resource.create(
+            body={
+                "properties": {"title": self._config.TITLE},
+                "sheets": _gen_sheets_struct(self._config.SHEETS.keys()),
+            }
+        ).execute()
+        return spreadsheet.get("spreadsheetId")
 
     def _clear_range(self, sheet_name, length):
         """Delete data from last cell to the end.
@@ -261,7 +256,7 @@ class Spreadsheet:
             sheet_name=sheet_name, start_from=length + 2
         )
 
-        service.spreadsheets().values().clear(
+        self._ss_resource.values().clear(
             spreadsheetId=self._id, range=sym_range
         ).execute()
 
@@ -347,8 +342,7 @@ class Spreadsheet:
         Returns: Issues index (dict).
         """
         table = (
-            service.spreadsheets()
-            .values()
+            self._ss_resource.values()
             .get(spreadsheetId=self._id, range=sheet_name, valueRenderOption="FORMULA")
             .execute()
             .get("values")
@@ -357,8 +351,7 @@ class Spreadsheet:
         if table is None:
             self._format_sheet(sheet_name)
             table = (
-                service.spreadsheets()
-                .values()
+                self._ss_resource.values()
                 .get(
                     spreadsheetId=self._id,
                     range=sheet_name,
@@ -397,7 +390,7 @@ class Spreadsheet:
             count=len(rows) + start_index + 1,
         )
 
-        service.spreadsheets().values().update(
+        self._ss_resource.values().update(
             spreadsheetId=self._id,
             range=sheet_name + "!" + sym_range,
             valueInputOption="USER_ENTERED",
@@ -412,7 +405,7 @@ class Spreadsheet:
                 Dicts, each of which represents single request.
         """
         if requests:
-            service.spreadsheets().batchUpdate(
+            self._ss_resource.batchUpdate(
                 spreadsheetId=self._id, body={"requests": requests}
             ).execute()
 
