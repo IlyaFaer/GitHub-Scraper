@@ -1,11 +1,11 @@
-name: Lint
+name: Pre merge checks
 
 on: 
   pull_request:
     types: [opened, synchronize]
 
 jobs:
-  pre-merge check:
+  Lint:
 
     runs-on: ubuntu-latest
 
@@ -23,3 +23,17 @@ jobs:
       run: |
         pip install black
         black . --check
+        
+  Unit-tests:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Set up Python 3.7
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.7
+    - name: Run unit tests
+      run: |
+        python -m unittest discover tests
