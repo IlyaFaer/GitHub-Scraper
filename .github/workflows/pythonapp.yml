@@ -36,4 +36,5 @@ jobs:
         python-version: 3.7
     - name: Run unit tests
       run: |
+        cd scraper
         python -m unittest discover scraper/tests
