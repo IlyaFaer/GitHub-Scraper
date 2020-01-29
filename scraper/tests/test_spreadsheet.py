@@ -34,6 +34,7 @@ class SpreadsheetMock(spreadsheet.Spreadsheet):
         self._config = config
         self._id = SPREADSHEET_ID
         self._ss_resource = None
+        self._sheets_ids = {}
 
 
 CONFIG = ConfigMock()
@@ -91,6 +92,29 @@ class TestSpreadsheet(unittest.TestCase):
         self.assertEqual(ss_mock._id, ss_mock.id)
         with self.assertRaises(AttributeError):
             ss_mock.id = "new_id"
+
+    def test_new_sheets_requests(self):
+        """Check if add-new-sheet requests are built fine."""
+        SHEETS_IN_CONF = ("sheet_1", "sheet_2")
+        self._ss_mock._sheets_ids = {"sheet_1": True}
+
+        reqs = self._ss_mock._build_new_sheets_requests(SHEETS_IN_CONF)
+        self.assertEqual(len(reqs), 1)
+        self.assertEqual(reqs[0]["addSheet"]["properties"]["title"], "sheet_2")
+
+    def test_delete_sheets_requests(self):
+        """Check if delete-sheet requests are built fine."""
+        FIRST_SHEET_ID = 123
+        SHEETS_IN_CONF = ("sheet_2",)
+
+        with mock.patch.object(
+            self._ss_mock,
+            "_sheets_ids",
+            mock.Mock(as_dict={"sheet_1": FIRST_SHEET_ID, "sheet_2": 456}),
+        ):
+            reqs = self._ss_mock._build_delete_sheets_requests(SHEETS_IN_CONF)
+            self.assertEqual(len(reqs), 1)
+            self.assertEqual(reqs[0]["deleteSheet"]["sheetId"], FIRST_SHEET_ID)
 
     def test_update_all_sheets(self):
         """Update sheets one by one."""

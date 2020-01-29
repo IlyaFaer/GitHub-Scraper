@@ -120,38 +120,15 @@ class Spreadsheet:
             self._sheets_ids.update()
             sheets_in_conf = tuple(self._config.SHEETS.keys())
 
-            # build insert requests for the new sheets
-            new_sheets = False
-            for sheet_name in sheets_in_conf:
-                if not self._sheets_ids.get(sheet_name):
-                    new_sheets = True
-                    requests.append(
-                        {
-                            "addSheet": {
-                                "properties": {
-                                    "title": sheet_name,
-                                    "gridProperties": {
-                                        "rowCount": 1000,
-                                        "columnCount": 26,
-                                    },
-                                }
-                            }
-                        }
-                    )
-            # build delete requests for the sheets, which
-            # haven't been found in the configurations
-            del_sheets = False
-            sheets = self._sheets_ids.as_dict
-            for sheet_name in sheets.keys():
-                if sheet_name not in sheets_in_conf:
-                    del_sheets = True
-                    requests.append({"deleteSheet": {"sheetId": sheets[sheet_name]}})
+            new_sheets_reqs = self._build_new_sheets_requests(sheets_in_conf)
+            del_sheets_reqs = self._build_delete_sheets_requests(sheets_in_conf)
 
             self._ss_resource.batchUpdate(
-                spreadsheetId=self._id, body={"requests": requests}
+                spreadsheetId=self._id,
+                body={"requests": requests + new_sheets_reqs + del_sheets_reqs},
             ).execute()
 
-            if new_sheets or del_sheets:
+            if new_sheets_reqs or del_sheets_reqs:
                 self._sheets_ids.update()
 
             logging.info("updated")
@@ -237,6 +214,50 @@ class Spreadsheet:
                 Imported config.py module with all preferences.
         """
         self._config = config
+
+    def _build_new_sheets_requests(self, sheets_in_conf):
+        """Build add-new-sheet requests for the new sheets.
+
+        Args:
+            sheets_on_conf (tuple): Sheets list from the configurations.
+
+        Returns:
+            list: List of add-new-sheet requests.
+        """
+        new_sheets_reqs = []
+        for sheet_name in sheets_in_conf:
+            if not self._sheets_ids.get(sheet_name):
+                new_sheets_reqs.append(
+                    {
+                        "addSheet": {
+                            "properties": {
+                                "title": sheet_name,
+                                "gridProperties": {"rowCount": 1000, "columnCount": 26},
+                            }
+                        }
+                    }
+                )
+        return new_sheets_reqs
+
+    def _build_delete_sheets_requests(self, sheets_in_conf):
+        """
+        Build delete requests for the sheets, which
+        haven't been found in the configurations.
+
+        Args:
+            sheets_in_conf (tuple): Sheets list from the configurations.
+
+        Returns:
+            list: List of delete-sheet requests.
+        """
+        del_sheets_reqs = []
+        sheets = self._sheets_ids.as_dict
+
+        for sheet_name in sheets.keys():
+            if sheet_name not in sheets_in_conf:
+                del_sheets_reqs.append({"deleteSheet": {"sheetId": sheets[sheet_name]}})
+
+        return del_sheets_reqs
 
     def _login_on_google(self):
         """Login on Google Spreadsheet service."""
