@@ -4,7 +4,6 @@ GitHub-Scraper automatically builds issues and PRs tables in Google Sheets docum
 * **Multirepo**: track several repositories within one sheet and several sheets within one spreadsheet
 * **Constructible**: tweak table structure, relations "repository-to-sheet" and filling functions
 * **Adaptive**: change your preferences and add new repos/sheets without restarting Scraper
-* **Ongoing**: continue filling on exceptions - scraper will log traceback into file without failing
 
 ![image](https://github.com/IlyaFaer/GitHub-Scraper/blob/master/GitHubScraperPreview.png?raw=true)
 
