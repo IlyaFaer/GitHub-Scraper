@@ -3,7 +3,7 @@ Utils for reading data from GitHub and building
 them into convenient structures.
 """
 import datetime
-from const import YELLOW_RAPS, PINK, PURPLE, PATTERNS
+from const import PATTERNS
 from github import Github
 from pr_index import PullRequestsIndex
 
@@ -33,12 +33,17 @@ class SheetBuilder:
         self.first_update = True
         self._login_on_github()
 
-    def build_table(self):
-        """Build list of issues/PRs from given repositories.
+    def retrieve_updated(self):
+        """Build list of issues/PRs from the given repositories.
+
+        If this is the first update, than retrieve all of the
+        opened issues. If update is subsequent, than only issues
+        (opened and closed), which were updated since the last
+        update will be processed.
 
         Returns:
             dict:
-                Index of issue in format:
+                Index of issues in format:
                 {(issue.number, repo_short_name): github.Issue.Issue}
         """
         issue_index = {}
@@ -222,22 +227,3 @@ class SheetBuilder:
             for pattern in PATTERNS:
                 result += pattern.findall(body)
         return result
-
-
-def designate_status_color(pull, team):
-    """Check PR's status and return corresponding color.
-
-    Args:
-        pull (github.PullRequest.PullRequest):
-            Pull request object.
-    """
-    status = None
-
-    if pull.merged:
-        status = PURPLE
-    elif pull.state == "closed" and not pull.merged:
-        status = PINK
-    elif pull.user.login not in team:
-        status = YELLOW_RAPS
-
-    return status

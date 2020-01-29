@@ -9,6 +9,7 @@ import examples.config_example  # noqa: E402
 sys.modules["config"] = examples.config_example
 
 import spreadsheet  # noqa: E402
+import sheet_builder  # noqa: E402
 import unittest  # noqa: E402
 import unittest.mock as mock  # noqa: E402
 
@@ -19,7 +20,7 @@ class ConfigMock:
     """Hand-written mock for config module."""
 
     def __init__(self):
-        self.SHEETS = {"sheet1": {}, "sheet2": {}}
+        self.SHEETS = {"sheet1": {"repo_names": {}}, "sheet2": {}}
 
 
 class SpreadsheetMock(spreadsheet.Spreadsheet):
@@ -115,6 +116,18 @@ class TestSpreadsheet(unittest.TestCase):
             reqs = self._ss_mock._build_delete_sheets_requests(SHEETS_IN_CONF)
             self.assertEqual(len(reqs), 1)
             self.assertEqual(reqs[0]["deleteSheet"]["sheetId"], FIRST_SHEET_ID)
+
+    def test_prepare_builder(self):
+        """Check if new builder created and used on a next call."""
+        SHEET_NAME = "sheet1"
+        with mock.patch("sheet_builder.SheetBuilder._login_on_github"):
+            builder = self._ss_mock._prepare_builder(SHEET_NAME)
+
+        self.assertIsInstance(builder, sheet_builder.SheetBuilder)
+        self.assertEqual(self._ss_mock._builders[SHEET_NAME], builder)
+
+        builder2 = self._ss_mock._prepare_builder(SHEET_NAME)
+        self.assertEqual(builder, builder2)
 
     def test_update_all_sheets(self):
         """Update sheets one by one."""

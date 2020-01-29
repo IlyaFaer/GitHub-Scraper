@@ -7,7 +7,7 @@ import string
 import sheet_builder
 import auth
 import fill_funcs
-from utils import get_num_from_url
+from utils import get_num_from_url, BatchIterator
 from instances import Columns, Row
 from const import DIGITS_PATTERN
 
@@ -121,11 +121,12 @@ class Spreadsheet:
             sheets_in_conf = tuple(self._config.SHEETS.keys())
 
             new_sheets_reqs = self._build_new_sheets_requests(sheets_in_conf)
+            requests += new_sheets_reqs
             del_sheets_reqs = self._build_delete_sheets_requests(sheets_in_conf)
+            requests += del_sheets_reqs
 
             self._ss_resource.batchUpdate(
-                spreadsheetId=self._id,
-                body={"requests": requests + new_sheets_reqs + del_sheets_reqs},
+                spreadsheetId=self._id, body={"requests": requests}
             ).execute()
 
             if new_sheets_reqs or del_sheets_reqs:
@@ -151,15 +152,12 @@ class Spreadsheet:
         Args:
             sheet_name (str): Name of the sheet to be updated.
         """
-        # build new table from the repositories specified in config.py
-        builder = self._builders.setdefault(sheet_name, sheet_builder.SheetBuilder())
-        builder.update_config(self._config.SHEETS[sheet_name])
-        raw_new_table = builder.build_table()
-
+        builder = self._prepare_builder(sheet_name)
+        raw_new_table = builder.retrieve_updated()
         tracked_issues = self._read_sheet(sheet_name)
 
         to_be_deleted = []
-        # merging the new table with the old one
+        # merging the new table into the old one
         for tracked_id in tracked_issues.keys():
             updated_issue = None
             prs = builder.get_related_prs(tracked_id)
@@ -214,6 +212,22 @@ class Spreadsheet:
                 Imported config.py module with all preferences.
         """
         self._config = config
+
+    def _prepare_builder(self, sheet_name):
+        """Init new SheetBuilder or return the existing one.
+
+        Args:
+            sheet_name (str):
+                Name of the sheet, for which builder should be prepared.
+
+        Returns:
+            SheetBuilder: Sheet builder, prepared for work.
+        """
+        if sheet_name not in self._builders:
+            self._builders[sheet_name] = sheet_builder.SheetBuilder()
+
+        self._builders[sheet_name].update_config(self._config.SHEETS[sheet_name])
+        return self._builders[sheet_name]
 
     def _build_new_sheets_requests(self, sheets_in_conf):
         """Build add-new-sheet requests for the new sheets.
@@ -437,9 +451,10 @@ class Spreadsheet:
                 Dicts, each of which represents single request.
         """
         if requests:
-            self._ss_resource.batchUpdate(
-                spreadsheetId=self._id, body={"requests": requests}
-            ).execute()
+            for batch in BatchIterator(requests):
+                self._ss_resource.batchUpdate(
+                    spreadsheetId=self._id, body={"requests": batch}
+                ).execute()
 
 
 def _build_index(table, column_names):
