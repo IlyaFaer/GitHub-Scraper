@@ -2,6 +2,37 @@
 from const import NUM_REGEX, PATTERNS, YELLOW_RAPS, PINK, PURPLE
 
 
+class BatchIterator:
+    """Helper for iterating requests in batches.
+
+    Args:
+        requests (list): List of requests to iterate.
+        size (int): Size of a single one batch.
+    """
+
+    def __init__(self, requests, size=20):
+        self._requests = requests
+        self._size = size
+        self._pos = 0
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        """Return requests batch with given size.
+
+        Returns:
+            list: Requests batch.
+        """
+        batch = self._requests[self._pos : self._pos + self._size]  # noqa: E203
+        self._pos += self._size
+
+        if not batch:
+            raise StopIteration()
+
+        return batch
+
+
 def get_num_from_url(url):
     """Get issue number from it's URL.
 
