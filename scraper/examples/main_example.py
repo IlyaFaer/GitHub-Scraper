@@ -3,8 +3,7 @@
 Create your own main.py to use Scraper.
 Your main.py will not be Git-tracked.
 
-It creates Google spreadsheet according to a structure
-described in config.py file, and then updates it at
+It creates Google spreadsheet and then updates it at the
 specified interval. Before every update tracker reloads
 config.py module to get new preferences and filling functions.
 """
@@ -19,7 +18,7 @@ from spreadsheet import Spreadsheet
 spreadsheet_id = "1Z9QoQ8xUoOtHVUtrtLV6T78J30jvQS4uE0G4AK2Bhkc"
 spreadsheet = Spreadsheet(config, spreadsheet_id)
 
-# updating spreadsheet at specified period
+# updating the spreadsheet at the specified period
 while True:
     # reload configurations and constants
     # before updating the spreadsheet

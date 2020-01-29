@@ -9,21 +9,27 @@ from pr_index import PullRequestsIndex
 
 
 class SheetBuilder:
-    """Class that builds table of issues/PRs from specified repos."""
+    """Class that builds table of issues/PRs from specified repos.
+
+    SheetBuilder should be used only for the single one
+    specific sheet, meaning all of the repositories set
+    to be tracked by this builder, will be shown on this sheet.
+    """
 
     def __init__(self):
-        self._repos = {}
+        self._repos = {}  # repos tracked by this builder
         self._repo_names = {}
         self._in_repo_names = {}
         self._repo_names_inverse = {}
-        # time when any PR was last updated in specific repo
+        # time when any PR was last updated in every repo
         self._last_pr_updates = {}
-        # time when any issue was last updated in specific repo
+        # time when any issue was last updated in every repo
         self._last_issue_updates = {}
         self.prs_index = PullRequestsIndex()
         # dict in which we aggregate all of the issue objects
         # used to avoid re-reading unupdated issues from GitHub
         self._issues_index = {}
+        self._gh_client = None  # GitHub client object
         self.first_update = True
         self._login_on_github()
 
@@ -108,7 +114,7 @@ class SheetBuilder:
         return issue
 
     def update_config(self, config):
-        """Update builder's configurations.
+        """Update builder's configurations - list of tracked repos.
 
         Args:
             config (dict): Dict with sheet's configurations.
@@ -123,7 +129,7 @@ class SheetBuilder:
         """Return internal and public pull requests of specified issue.
 
         Args:
-            issue_id (tuple): Issue's number and repo short name.
+            issue_id (tuple): Issue number and repo short name.
 
         Returns:
             dict:
@@ -133,14 +139,14 @@ class SheetBuilder:
         return self.prs_index.get_related_prs(issue_id)
 
     def _get_repo_lts(self, repo):
-        """Get repo's short name.
+        """Get repo short name.
 
         Args:
             repo (github.Repository.Repository):
                 Repository object.
 
         Returns:
-            str: Repo's short name.
+            str: Repository short name.
         """
         repo_lts = self._repo_names.get(repo.full_name)
         if repo_lts is None:
@@ -149,7 +155,7 @@ class SheetBuilder:
         return repo_lts
 
     def _login_on_github(self):
-        """Authenticate in GitHub."""
+        """Authenticate on GitHub."""
         with open("loginpas.txt") as login_file:
             login, password = login_file.read().split("/")
 

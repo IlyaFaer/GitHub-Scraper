@@ -64,12 +64,12 @@ class CachedSheetsIds:
 class Spreadsheet:
     """Object for reading/updating Google spreadsheet.
 
-    Uses 'config' attr to update spreasheet's structure
+    Uses 'config' attr to update spreasheet's structure,
     and SheetBuilders to fill sheets with issues/PRs data.
 
     Args:
         config (module):
-            Imported config.py module with all
+            Imported config.py module with all of the
             spreadsheet preferences.
 
         id_ (str):
@@ -78,14 +78,26 @@ class Spreadsheet:
     """
 
     def __init__(self, config, id_=None):
-        self._builders = {}  # list of builders for every sheet
+        self._builders = {}  # table builders for every sheet
         self._config = config
         self._columns = []
-        self._ss_resource = None
+        self._ss_resource = None  # spreadsheet Resource
 
         self._login_on_google()
         self._id = id_ or self._create_spreadsheet()
         self._sheets_ids = CachedSheetsIds(self._ss_resource, self._id)
+
+    @property
+    def id(self):
+        """Spreadsheet id."""
+        return self._id
+
+    @id.setter
+    def id(self, value):
+        """Spreadsheet id setter."""
+        raise AttributeError(
+            "Spreadsheet id can't be changed. Initiate another Spreadsheet() object."
+        )
 
     def update_structure(self):
         """Update spreadsheet structure.
@@ -95,7 +107,7 @@ class Spreadsheet:
         from the configurations.
         """
         try:
-            logging.info("updating spreadsheet")
+            logging.info("updating spreadsheet {id_}".format(id_=self._id))
             # spreadsheet rename request
             requests = [
                 {
@@ -105,7 +117,6 @@ class Spreadsheet:
                     }
                 }
             ]
-
             self._sheets_ids.update()
             sheets_in_conf = tuple(self._config.SHEETS.keys())
 
@@ -148,7 +159,7 @@ class Spreadsheet:
             logging.exception("Exception occured:")
 
     def update_all_sheets(self):
-        """Update all sheets from the configurations one by one."""
+        """Update all the sheets from the configurations one by one."""
         for sheet_name in self._config.SHEETS.keys():
             logging.info("updating " + sheet_name)
             try:
@@ -219,7 +230,7 @@ class Spreadsheet:
         builder.first_update = False
 
     def reload_config(self, config):
-        """Load config.py module into spreadsheet object.
+        """Save config.py module into spreadsheet object.
 
         Args:
             config (module):
@@ -246,7 +257,7 @@ class Spreadsheet:
         return spreadsheet.get("spreadsheetId")
 
     def _clear_range(self, sheet_name, length):
-        """Delete data from last cell to the end.
+        """Delete data from last table row to the end.
 
         Args:
             sheet_name (str): Sheet name.
@@ -280,7 +291,7 @@ class Spreadsheet:
         self._apply_formating_data(self._columns.requests)
 
     def _rows_to_lists(self, tracked_issues, sheet_name):
-        """Convert every Row into list before sending into spreadsheet.
+        """Convert every Row into list.
 
         Args:
             tracked_issues (list): Rows, each of which represents single row.
@@ -333,13 +344,13 @@ class Spreadsheet:
 
     def _read_sheet(self, sheet_name):
         """
-        Read the specified existing sheet and build
-        issues index.
+        Read data from the specified existing sheet.
 
         Args:
-            sheet_name (str): Name of sheet to be read.
+            sheet_name (str): Name of the sheet to be read.
 
-        Returns: Issues index (dict).
+        Returns:
+            dict: Issues index.
         """
         table = (
             self._ss_resource.values()
@@ -368,15 +379,15 @@ class Spreadsheet:
         return _build_index(table, title_row)
 
     def _insert_into_sheet(self, sheet_name, rows, start_from):
-        """Write new data into specified sheet.
+        """Write new data into the specified sheet.
 
         Args:
             sheet_name (str):
-                Name of sheet that must be updated.
+                Name of the sheet that must be updated.
 
             rows (list):
                 Lists, each of which represents single
-                row in a sheet.
+                row in the sheet.
 
             start_from (str):
                 Symbolic index, from which data insertion
@@ -445,7 +456,7 @@ def _convert_to_rows(title_row, table):
 
 
 def _gen_sheets_struct(sheets_config):
-    """Build dicts with sheet's preferences.
+    """Build dicts with the sheet preferences.
 
     Args:
         sheets_config (dict): Sheets preferences.

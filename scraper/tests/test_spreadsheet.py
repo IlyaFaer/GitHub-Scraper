@@ -4,14 +4,13 @@ import examples.fill_funcs_example
 
 sys.modules["fill_funcs"] = examples.fill_funcs_example
 
-import examples.config_example
+import examples.config_example  # noqa: E402
 
 sys.modules["config"] = examples.config_example
 
-import spreadsheet
-import github
-import unittest
-import unittest.mock as mock
+import spreadsheet  # noqa: E402
+import unittest  # noqa: E402
+import unittest.mock as mock  # noqa: E402
 
 SPREADSHEET_ID = "ss_id"
 
@@ -29,7 +28,7 @@ class SpreadsheetMock(spreadsheet.Spreadsheet):
     Overrides some methods to exclude backend calls.
     """
 
-    def __init__(self, config):
+    def __init__(self, config, id_=None):
         self._builders = {}
         self._columns = []
         self._config = config
@@ -85,6 +84,13 @@ class TestSpreadsheet(unittest.TestCase):
                 login_mock.assert_called_once()
 
             create_ss.assert_not_called()
+
+    def test_id(self):
+        """Check whether id attribute is working fine."""
+        ss_mock = SpreadsheetMock(CONFIG, "test_id")
+        self.assertEqual(ss_mock._id, ss_mock.id)
+        with self.assertRaises(AttributeError):
+            ss_mock.id = "new_id"
 
     def test_update_all_sheets(self):
         """Update sheets one by one."""
