@@ -103,12 +103,14 @@ def fill_assignee(old_issue, issue, sheet_name, sheet_config, prs, is_new):
     """'Assignee' column filling."""
     assignee = issue.assignee
     if (
-        old_issue["Assignee"] not in sheet_config["team"]
+        old_issue["Assignee"] not in sheet_config["columns"][7]["values"]
         or old_issue["Assignee"] == "N/A"
     ):
         if assignee:
             old_issue["Assignee"] = (
-                assignee.login if assignee.login in sheet_config["team"] else "Other"
+                assignee.login
+                if assignee.login in sheet_config["columns"][7]["values"]
+                else "Other"
             )
         else:
             old_issue["Assignee"] = "N/A"
@@ -141,7 +143,7 @@ def fill_ppr(old_issue, issue, sheet_name, sheet_config, prs, is_new):
 
         old_issue["Public PR"] = build_url_formula(last_pr)
         old_issue.colors["Public PR"] = designate_status_color(
-            last_pr, sheet_config["team"]
+            last_pr, sheet_config["columns"][7]["values"]
         )
 
 
@@ -152,7 +154,7 @@ def fill_ipr(old_issue, issue, sheet_name, sheet_config, prs, is_new):
 
         old_issue["Internal PR"] = build_url_formula(last_pr)
         old_issue.colors["Internal PR"] = designate_status_color(
-            last_pr, sheet_config["team"]
+            last_pr, sheet_config["columns"][7]["values"]
         )
 
 

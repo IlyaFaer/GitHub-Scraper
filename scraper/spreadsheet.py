@@ -315,9 +315,6 @@ class Spreadsheet:
         Args:
             sheet_name (str): Name of sheet which must be formatted.
         """
-        # set validation for team members
-        self._config.COLUMNS[7]["values"] = self._config.SHEETS[sheet_name]["team"]
-
         self._columns = Columns(
             self._config.SHEETS[sheet_name]["columns"], self._sheets_ids.get(sheet_name)
         )

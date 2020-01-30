@@ -3,7 +3,7 @@ File describes spreadsheet's architecture, including
 columns style, data validation, tracked repositories, etc.
 
 This is a configurations example. Create and tweak your
-own config.py. Your config.py will not be Git-tracked.
+own config.py (see TODO). Your config.py will not be Git-tracked.
 """
 import copy
 from utils import get_num_from_url
@@ -94,9 +94,51 @@ COLUMNS = [
     {"name": "Comment", "width": 550},
 ]
 
+# team for every sheet
+TEAMS = {
+    "Python": [
+        "IlyaFaer",
+        "HemangChothani",
+        "mf2199",
+        "sangramql",
+        "Emar-Kar",
+        "paul1319",
+        "Other",
+        "N/A",
+    ],
+    "NodeJS": [
+        "laljikanjareeya",
+        "praveenqlogic01",
+        "jiren",
+        "vishald123",
+        "AVaksman",
+        "IvanAvanessov",
+        "fazunenko",
+        "Other",
+        "N/A",
+    ],
+    "Golang": ["IlyaFaer", "AlisskaPie", "Other", "N/A"],
+    "PHP": ["andrewinc", "ava12", "Other", "N/A"],
+    "Java": ["athakor", "pmakani", "rahulKQL", "fazunenko", "Other", "N/A"],
+}
+
 # we don't review code internally in Go
 GO_COLUMNS = copy.copy(COLUMNS)
+GO_COLUMNS[7]["values"] = TEAMS["Golang"]
 GO_COLUMNS.pop(8)
+
+# set teams into column settings (every sheet has it's own team)
+PY_COLUMNS = copy.deepcopy(COLUMNS)
+PY_COLUMNS[7]["values"] = TEAMS["Python"]
+
+JS_COLUMNS = copy.deepcopy(COLUMNS)
+JS_COLUMNS[7]["values"] = TEAMS["NodeJS"]
+
+PHP_COLUMNS = copy.deepcopy(COLUMNS)
+PHP_COLUMNS[7]["values"] = TEAMS["PHP"]
+
+JAVA_COLUMNS = copy.deepcopy(COLUMNS)
+JAVA_COLUMNS[7]["values"] = TEAMS["Java"]
 
 # TODO: set your spreadsheet structure
 SHEETS = {
@@ -111,18 +153,8 @@ SHEETS = {
             "q-logic/google-cloud-python": "GCP",
             "q-logic/google-resumable-media-python": "GRMP",
         },
-        "team": [  # people, who works in this repos
-            "IlyaFaer",
-            "HemangChothani",
-            "mf2199",
-            "sangramql",
-            "Emar-Kar",
-            "paul1319",
-            "Other",
-            "N/A",
-        ],
         # columns configurations for this sheet
-        "columns": COLUMNS,
+        "columns": PY_COLUMNS,
     },
     # -----------------------------
     "NodeJS": {
@@ -135,18 +167,7 @@ SHEETS = {
             "googleapis/nodejs-bigtable": "BigTable",
             "googleapis/nodejs-pubsub": "PubSub",
         },
-        "team": [
-            "laljikanjareeya",
-            "praveenqlogic01",
-            "jiren",
-            "vishald123",
-            "AVaksman",
-            "IvanAvanessov",
-            "fazunenko",
-            "Other",
-            "N/A",
-        ],
-        "columns": COLUMNS,
+        "columns": JS_COLUMNS,
     },
     # -----------------------------
     "Golang": {
@@ -155,7 +176,6 @@ SHEETS = {
             "googleapis/google-cloud-go": "Cloud",
             "googleapis/google-api-go-client": "ApiClient",
         },
-        "team": ["IlyaFaer", "AlisskaPie", "Other", "N/A"],
         "columns": GO_COLUMNS,
     },
     # -----------------------------
@@ -163,8 +183,7 @@ SHEETS = {
         "labels": projects_labels,
         "repo_names": {"googleapis/google-cloud-php": "GCPHP"},
         "internal_repo_names": {"q-logic/google-cloud-php": "GCPHP"},
-        "team": ["andrewinc", "ava12", "Other", "N/A"],
-        "columns": COLUMNS,
+        "columns": PHP_COLUMNS,
     },
     "Java": {
         "labels": projects_labels,
@@ -237,8 +256,7 @@ SHEETS = {
             "googleapis/common-protos-java": "Common Protos",
         },
         "internal_repo_names": {},
-        "team": ["athakor", "pmakani", "rahulKQL", "fazunenko", "Other", "N/A"],
-        "columns": COLUMNS,
+        "columns": JAVA_COLUMNS,
     },
 }
 
