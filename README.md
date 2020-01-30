@@ -12,7 +12,7 @@ To build your first tables and start tracking repositories you need:
 * Steps 1 and 2 of [Google Sheets API Setup](https://developers.google.com/sheets/api/quickstart/python)
 * Install [PyGitHub package](https://pygithub.readthedocs.io/en/latest/introduction.html)  
 In *scraper* folder:
-* Create *loginpas.txt* and enter your GitHub login and password into it in format: `login/password`. No whitespaces or newlines needed
+* Create *loginpas.txt* and enter your GitHub login and password into it in format: `login/password`
 * Create *config.py* and set your tables configurations with it (see [config_example.py](https://github.com/IlyaFaer/GitHub-Scraper/blob/master/scraper/examples/config_example.py))
 * Create *fill_funcs.py* and set your filling functions with it (see [fill_funcs_example.py](https://github.com/IlyaFaer/GitHub-Scraper/blob/master/scraper/examples/fill_funcs_example.py))
 * Create and run *main.py* (see [main_example.py](https://github.com/IlyaFaer/GitHub-Scraper/blob/master/scraper/examples/main_example.py)) - Scraper will build tables and start tracking specified repositories. First filling after program start usually takes some time, but subsequent updates will be faster (~80% faster), as Scraper will be processing only recently updated PRs and issues.
@@ -40,7 +40,4 @@ To make Scraper detect PRs, use GitHub keywords "Towards", "Closes", "Fixes" in 
 PR number may be colored. Colors have their meaning:  
 Gold - created by not a team member  
 Red - closed  
-Violet - merged  
-
-**Assignee**  
-In *config.py* you can specify team members. If any member assigned issue, his login will be shown in Assignee column. If issue was assigned by someone else, you'll see "Other" in Assignee column.
+Violet - merged
