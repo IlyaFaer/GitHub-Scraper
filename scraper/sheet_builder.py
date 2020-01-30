@@ -162,7 +162,7 @@ class SheetBuilder:
     def _login_on_github(self):
         """Authenticate on GitHub."""
         with open("loginpas.txt") as login_file:
-            login, password = login_file.read().split("/")
+            login, password = login_file.read().strip().split("/")
 
         self._gh_client = Github(login, password)
 
