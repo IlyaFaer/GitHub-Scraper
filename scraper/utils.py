@@ -33,19 +33,19 @@ class BatchIterator:
         return batch
 
 
-def get_num_from_url(url):
-    """Get issue number from it's URL.
+def get_num_from_formula(formula):
+    """Get issue number from spreadsheet HYPERLINK formula.
 
     Args:
-        url (str): URL or formula for issue.
+        formula (str): URL or HYPERLINK formula.
 
     Returns:
         str: issue number.
     """
-    match = NUM_REGEX.search(url)
+    match = NUM_REGEX.search(formula)
     if match is not None:
         return match.group("num").replace('"', "")
-    return url
+    return formula
 
 
 def build_url_formula(issue):

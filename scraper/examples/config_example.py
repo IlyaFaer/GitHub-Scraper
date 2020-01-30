@@ -6,7 +6,7 @@ This is a configurations example. Create and tweak your
 own config.py (see TODO). Your config.py will not be Git-tracked.
 """
 import copy
-from utils import get_num_from_url
+from utils import get_num_from_formula
 import fill_funcs
 import const
 
@@ -267,4 +267,4 @@ def sort_func(row):
     Args:
         row (dict): Dict representation of a single row.
     """
-    return row["Repository"], row["Project"], int(get_num_from_url(row["Issue"]))
+    return row["Repository"], row["Project"], int(get_num_from_formula(row["Issue"]))

@@ -7,7 +7,7 @@ import string
 import sheet_builder
 import auth
 import fill_funcs
-from utils import get_num_from_url, BatchIterator
+from utils import get_num_from_formula, BatchIterator
 from instances import Columns, Row
 from const import DIGITS_PATTERN
 
@@ -81,7 +81,7 @@ class Spreadsheet:
         self._builders = {}  # table builders for every sheet
         self._config = config
         self._columns = []
-        self._ss_resource = None  # spreadsheet Resource
+        self._ss_resource = None  # spreadsheet Resource object
 
         self._login_on_google()
         self._id = id_ or self._create_spreadsheet()
@@ -102,9 +102,9 @@ class Spreadsheet:
     def update_structure(self):
         """Update spreadsheet structure.
 
-        Rename spreadsheet, if name in config.py has been changed.
-        Add new sheets into the spreadsheet, delete sheets deleted
-        from the configurations.
+        Rename the spreadsheet, if name in config.py has been
+        changed. Add new sheets into the spreadsheet, delete
+        sheets deleted from the configurations.
         """
         try:
             logging.info("updating spreadsheet {id_}".format(id_=self._id))
@@ -160,7 +160,6 @@ class Spreadsheet:
         # merging the new table into the old one
         for tracked_id in tracked_issues.keys():
             updated_issue = None
-            prs = builder.get_related_prs(tracked_id)
             if tracked_id in raw_new_table:
                 updated_issue = raw_new_table.pop(tracked_id)
             # on a first update check old (closed issues included)
@@ -172,6 +171,7 @@ class Spreadsheet:
             else:
                 updated_issue = builder.get_from_index(tracked_id)
 
+            prs = builder.get_related_prs(tracked_id)
             if updated_issue:
                 # update columns using fill function
                 for col in self._columns.names:
@@ -292,7 +292,7 @@ class Spreadsheet:
         return spreadsheet.get("spreadsheetId")
 
     def _clear_range(self, sheet_name, length):
-        """Delete data from last table row to the end.
+        """Clear cells from the last table row till the end.
 
         Args:
             sheet_name (str): Sheet name.
@@ -307,18 +307,17 @@ class Spreadsheet:
         ).execute()
 
     def _format_sheet(self, sheet_name):
-        """Update sheet's structure.
+        """Update sheet structure.
 
-        Create title row in specified sheet, format columns
+        Create title row in the specified sheet, format columns
         and add data validation according to config module.
 
         Args:
-            sheet_name (str): Name of sheet which must be formatted.
+            sheet_name (str): Name of the sheet, which must be formatted.
         """
         self._columns = Columns(
             self._config.SHEETS[sheet_name]["columns"], self._sheets_ids.get(sheet_name)
         )
-
         self._insert_into_sheet(sheet_name, [self._columns.names], "A1")
         self._apply_formating_data(self._columns.requests)
 
@@ -469,7 +468,7 @@ def _build_index(table, column_names):
     """
     index = {}
     for row in table:
-        key = (get_num_from_url(row["Issue"]), row["Repository"])
+        key = (get_num_from_formula(row["Issue"]), row["Repository"])
         index[key] = Row(column_names)
         index[key].update(row)
     return index
@@ -499,7 +498,6 @@ def _gen_sheets_struct(sheets_config):
         for passing into Google Spreadsheet API requests.
     """
     sheets = []
-
     for sheet_name in sheets_config:
         sheets.append({"properties": {"title": sheet_name}})
 

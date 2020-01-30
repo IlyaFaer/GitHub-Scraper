@@ -55,17 +55,8 @@ class SheetBuilder:
             )
             self._index_closed_prs(repo)
 
-            args = {}
-            if repo_name in self._last_issue_updates:
-                args = {
-                    "sort": "updated",
-                    "direction": "desc",
-                    "since": self._last_issue_updates[repo_name],
-                    "state": "all",
-                }
-
             # process issues from the repo
-            for issue in repo.get_issues(**args):
+            for issue in repo.get_issues(**self._build_filter(repo_name)):
                 id_ = self._build_issues_id(issue, repo)
                 if id_:
                     issue_index[id_] = issue
@@ -142,6 +133,29 @@ class SheetBuilder:
                 related to the specified issue.
         """
         return self.prs_index.get_related_prs(issue_id)
+
+    def _build_filter(self, repo_name):
+        """Build filter for get_issue() method.
+
+        Args:
+            repo_name (str):
+                Name of the repo, which issues we're going to requests.
+
+        Returns:
+            dict: Filter, ready to be passed into the method.
+        """
+        args = {}
+        if repo_name in self._last_issue_updates:
+            # if it isn't the first get-issues request, than
+            # we're adding sorting and "since" filter
+            # to get only recently updated issues
+            args = {
+                "sort": "updated",
+                "direction": "desc",
+                "since": self._last_issue_updates[repo_name],
+                "state": "all",
+            }
+        return args
 
     def _get_repo_lts(self, repo):
         """Get repo short name.
