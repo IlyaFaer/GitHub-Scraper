@@ -120,7 +120,8 @@ class TestSpreadsheet(unittest.TestCase):
     def test_prepare_builder(self):
         """Check if new builder created and used on a next call."""
         SHEET_NAME = "sheet1"
-        builder = self._ss_mock._prepare_builder(SHEET_NAME)
+        with mock.patch("sheet_builder.SheetBuilder._login_on_github"):
+            builder = self._ss_mock._prepare_builder(SHEET_NAME)
 
         self.assertIsInstance(builder, sheet_builder.SheetBuilder)
         self.assertEqual(self._ss_mock._builders[SHEET_NAME], builder)

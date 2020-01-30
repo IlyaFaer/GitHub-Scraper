@@ -153,7 +153,7 @@ class Spreadsheet:
             sheet_name (str): Name of the sheet to be updated.
         """
         builder = self._prepare_builder(sheet_name)
-        raw_new_table = builder.retrieved_updated()
+        raw_new_table = builder.retrieve_updated()
         tracked_issues = self._read_sheet(sheet_name)
 
         to_be_deleted = []
@@ -223,9 +223,11 @@ class Spreadsheet:
         Returns:
             SheetBuilder: Sheet builder, prepared for work.
         """
-        builder = self._builders.setdefault(sheet_name, sheet_builder.SheetBuilder())
-        builder.update_config(self._config.SHEETS[sheet_name])
-        return builder
+        if sheet_name not in self._builders:
+            self._builders[sheet_name] = sheet_builder.SheetBuilder()
+
+        self._builders[sheet_name].update_config(self._config.SHEETS[sheet_name])
+        return self._builders[sheet_name]
 
     def _build_new_sheets_requests(self, sheets_in_conf):
         """Build add-new-sheet requests for the new sheets.

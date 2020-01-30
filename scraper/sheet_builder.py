@@ -33,7 +33,7 @@ class SheetBuilder:
         self.first_update = True
         self._login_on_github()
 
-    def retrieved_updated(self):
+    def retrieve_updated(self):
         """Build list of issues/PRs from the given repositories.
 
         If this is the first update, than retrieve all of the
