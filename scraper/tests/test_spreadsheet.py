@@ -9,7 +9,7 @@ import examples.config_example  # noqa: E402
 sys.modules["config"] = examples.config_example
 
 import spreadsheet  # noqa: E402
-import sheet_builder  # noqa: E402
+from sheet import Sheet  # noqa: E402
 import unittest  # noqa: E402
 import unittest.mock as mock  # noqa: E402
 
@@ -21,6 +21,7 @@ class ConfigMock:
 
     def __init__(self):
         self.SHEETS = {"sheet1": {"repo_names": {}}, "sheet2": {}}
+        self.TITLE = "MockTitle"
 
 
 class SpreadsheetMock(spreadsheet.Spreadsheet):
@@ -49,43 +50,54 @@ class TestSpreadsheet(unittest.TestCase):
         """Init mock for spreadsheet."""
         self._ss_mock = SpreadsheetMock(CONFIG)
 
-    def test_create(self):
-        """Init Spreadsheet object with new spreadsheet."""
-        with mock.patch(
-            "spreadsheet.Spreadsheet._create_spreadsheet", return_value=SPREADSHEET_ID
-        ) as create_ss:
-            with mock.patch("spreadsheet.CachedSheetsIds") as cache:
-                with mock.patch("spreadsheet.Spreadsheet._login_on_google") as login:
+    def test_init_create(self):
+        """Init Spreadsheet object with mew spreadsheet creation."""
+        SS_RESOURCE = "SS_RESOURCE"
+        SHEETS = "SHEETS"
+
+        with mock.patch("auth.authenticate", return_value=SS_RESOURCE) as auth_mock:
+            with mock.patch(
+                "spreadsheet.Spreadsheet._create", return_value=SPREADSHEET_ID
+            ) as create_mock:
+                with mock.patch(
+                    "spreadsheet.Spreadsheet._init_sheets", return_value=SHEETS
+                ) as init_sheets_mock:
                     doc = spreadsheet.Spreadsheet(CONFIG)
-                    self.assertEqual(doc._builders, {})
-                    self.assertEqual(doc._config, CONFIG)
-                    self.assertEqual(doc._columns, [])
-                    self.assertEqual(doc._id, SPREADSHEET_ID)
 
-                    login.assert_called_once()
+                    init_sheets_mock.assert_called_once()
+                create_mock.assert_called_once()
+            auth_mock.assert_called_once()
 
-                cache.assert_called_once_with(doc._ss_resource, SPREADSHEET_ID)
-
-            create_ss.assert_called_once()
+        self.assertEqual(doc._config, CONFIG)
+        self.assertEqual(doc._id, SPREADSHEET_ID)
+        self.assertEqual(doc._ss_resource, SS_RESOURCE)
+        self.assertEqual(doc._sheets, SHEETS)
 
     def test_init_existing(self):
         """Init Spreadsheet object with existing spreadsheet id."""
-        with mock.patch(
-            "spreadsheet.Spreadsheet._create_spreadsheet", return_value=SPREADSHEET_ID
-        ) as create_ss:
-            with mock.patch("spreadsheet.Spreadsheet._login_on_google") as login_mock:
-                with mock.patch("spreadsheet.CachedSheetsIds") as cache:
+        SS_RESOURCE = "SS_RESOURCE"
+        SHEETS = "SHEETS"
+
+        execute_mock = mock.Mock()
+        batch_mock = mock.Mock(return_value=mock.Mock(execute=execute_mock))
+        self._ss_mock._ss_resource = mock.Mock(batchUpdate=batch_mock)
+
+        with mock.patch("auth.authenticate", return_value=SS_RESOURCE) as auth_mock:
+            with mock.patch(
+                "spreadsheet.Spreadsheet._create", return_value=SPREADSHEET_ID
+            ) as create_ss:
+                with mock.patch(
+                    "spreadsheet.Spreadsheet._init_sheets", return_value=SHEETS
+                ) as init_sheets_mock:
                     doc = spreadsheet.Spreadsheet(CONFIG, SPREADSHEET_ID)
-                    self.assertEqual(doc._builders, {})
-                    self.assertEqual(doc._config, CONFIG)
-                    self.assertEqual(doc._columns, [])
-                    self.assertEqual(doc._id, SPREADSHEET_ID)
+                    init_sheets_mock.assert_called_once()
+                create_ss.assert_not_called()
+            auth_mock.assert_called_once()
 
-                    cache.assert_called_once_with(doc._ss_resource, SPREADSHEET_ID)
-
-                login_mock.assert_called_once()
-
-            create_ss.assert_not_called()
+        self.assertEqual(doc._config, CONFIG)
+        self.assertEqual(doc._id, SPREADSHEET_ID)
+        self.assertEqual(doc._ss_resource, SS_RESOURCE)
+        self.assertEqual(doc._sheets, SHEETS)
 
     def test_id(self):
         """Check whether id attribute is working fine."""
@@ -94,10 +106,153 @@ class TestSpreadsheet(unittest.TestCase):
         with self.assertRaises(AttributeError):
             ss_mock.id = "new_id"
 
+    def test_update_structure_no_update(self):
+        """
+        Test spreadsheet structure updating without
+        sheet creation and deletion.
+        """
+        RENAME_REQUEST = {
+            "updateSpreadsheetProperties": {
+                "properties": {"title": "MockTitle"},
+                "fields": "title",
+            }
+        }
+
+        execute_mock = mock.Mock()
+        batch_mock = mock.Mock(return_value=mock.Mock(execute=execute_mock))
+        self._ss_mock._ss_resource = mock.Mock(batchUpdate=batch_mock)
+
+        with mock.patch("spreadsheet.Spreadsheet._actualize_sheets") as actual_mock:
+            self._ss_mock.update_structure()
+            actual_mock.assert_not_called()
+
+        batch_mock.assert_called_once_with(
+            body={"requests": [RENAME_REQUEST]}, spreadsheetId="ss_id"
+        )
+
+    def test_update_structure(self):
+        """
+        Test spreadsheet structure updating.
+        New sheet creation and old sheet deleting included.
+        """
+        SHEET3_ID = 5623
+        RENAME_REQUEST = {
+            "updateSpreadsheetProperties": {
+                "properties": {"title": "MockTitle"},
+                "fields": "title",
+            }
+        }
+        CREATE_REQUEST = {
+            "addSheet": {
+                "properties": {
+                    "title": "sheet1",
+                    "gridProperties": {"rowCount": 1000, "columnCount": 26},
+                }
+            }
+        }
+        DELETE_REQUEST = {"deleteSheet": {"sheetId": SHEET3_ID}}
+
+        ss_mock = SpreadsheetMock(CONFIG, "test_id")
+        ss_mock._sheets = {
+            "sheet2": Sheet("sheet2", SPREADSHEET_ID, 123),
+            "sheet3": Sheet("sheet3", SPREADSHEET_ID, SHEET3_ID),
+        }
+        execute_mock = mock.Mock()
+        batch_mock = mock.Mock(return_value=mock.Mock(execute=execute_mock))
+        ss_mock._ss_resource = mock.Mock(batchUpdate=batch_mock)
+
+        with mock.patch("spreadsheet.Spreadsheet._actualize_sheets") as actual_mock:
+            ss_mock.update_structure()
+            actual_mock.assert_called_once()
+
+        batch_mock.assert_called_once_with(
+            body={"requests": [RENAME_REQUEST, CREATE_REQUEST, DELETE_REQUEST]},
+            spreadsheetId="ss_id",
+        )
+
+    def test_update_all_sheets(self):
+        """Update sheets one by one."""
+        ss_mock = SpreadsheetMock(CONFIG)
+        sheet1 = Sheet("sheet1", SPREADSHEET_ID)
+        sheet2 = Sheet("sheet2", SPREADSHEET_ID)
+
+        ss_mock._sheets = {"sheet1": sheet1, "sheet2": sheet2}
+        with mock.patch("sheet.Sheet.update") as update_sheet:
+            ss_mock.update_all_sheets()
+
+            # no spreadsheet resource used in
+            # this test, so args will be None
+            update_sheet.assert_has_calls((mock.call(None), mock.call(None)))
+
+    def test_reload_config(self):
+        """Test reloading the spreadsheet configurations."""
+        NEW_SHEETS = {"sheet1": {}, "sheet2": {}}
+
+        new_config = ConfigMock()
+        new_config.SHEETS = NEW_SHEETS
+
+        self._ss_mock._sheets = {
+            "sheet1": Sheet("sheet1", SPREADSHEET_ID),
+            "sheet2": Sheet("sheet2", SPREADSHEET_ID),
+        }
+
+        self._ss_mock.reload_config(new_config)
+        self.assertEqual(self._ss_mock._config, new_config)
+
+    def test_init_sheets(self):
+        SHEET1 = "sheet1"
+        SHEET2 = "sheet2"
+        SHEET1_ID = 6345345
+        SHEET2_ID = 1456241
+
+        execute_mock = mock.Mock(
+            return_value={
+                "sheets": [
+                    {"properties": {"title": SHEET1, "sheetId": SHEET1_ID}},
+                    {"properties": {"title": SHEET2, "sheetId": SHEET2_ID}},
+                ]
+            }
+        )
+        get_mock = mock.Mock(return_value=mock.Mock(execute=execute_mock))
+
+        ss_mock = SpreadsheetMock(CONFIG)
+        ss_mock._ss_resource = mock.Mock(get=get_mock)
+
+        sheets = ss_mock._init_sheets()
+        self.assertEqual(sheets[SHEET1].id, SHEET1_ID)
+        self.assertEqual(sheets[SHEET1].name, SHEET1)
+
+        self.assertEqual(sheets[SHEET2].id, SHEET2_ID)
+        self.assertEqual(sheets[SHEET2].name, SHEET2)
+
+    def test_actualize_sheets(self):
+        SHEET1 = "sheet1"
+        SHEET2 = "sheet2"
+        SHEET2_ID = 1456241
+
+        ss_mock = SpreadsheetMock(CONFIG)
+        ss_mock._sheets = {
+            SHEET1: Sheet(SHEET1, SPREADSHEET_ID),
+            SHEET2: Sheet(SHEET2, SPREADSHEET_ID),
+        }
+
+        execute_mock = mock.Mock(
+            return_value={
+                "sheets": [{"properties": {"title": SHEET2, "sheetId": SHEET2_ID}}]
+            }
+        )
+        get_mock = mock.Mock(return_value=mock.Mock(execute=execute_mock))
+        ss_mock._ss_resource = mock.Mock(get=get_mock)
+
+        ss_mock._actualize_sheets()
+        self.assertIsNone(ss_mock._sheets.get(SHEET1))
+        self.assertEqual(ss_mock._sheets[SHEET2].id, SHEET2_ID)
+
     def test_new_sheets_requests(self):
         """Check if add-new-sheet requests are built fine."""
         SHEETS_IN_CONF = ("sheet_1", "sheet_2")
         self._ss_mock._sheets_ids = {"sheet_1": True}
+        self._ss_mock._sheets = {"sheet_1": Sheet("sheet_1", SPREADSHEET_ID)}
 
         reqs = self._ss_mock._build_new_sheets_requests(SHEETS_IN_CONF)
         self.assertEqual(len(reqs), 1)
@@ -107,6 +262,10 @@ class TestSpreadsheet(unittest.TestCase):
         """Check if delete-sheet requests are built fine."""
         FIRST_SHEET_ID = 123
         SHEETS_IN_CONF = ("sheet_2",)
+        self._ss_mock._sheets = {
+            "sheet_1": Sheet("sheet_1", SPREADSHEET_ID, FIRST_SHEET_ID),
+            "sheet_2": Sheet("sheet_2", SPREADSHEET_ID),
+        }
 
         with mock.patch.object(
             self._ss_mock,
@@ -117,67 +276,20 @@ class TestSpreadsheet(unittest.TestCase):
             self.assertEqual(len(reqs), 1)
             self.assertEqual(reqs[0]["deleteSheet"]["sheetId"], FIRST_SHEET_ID)
 
-    def test_prepare_builder(self):
-        """Check if new builder created and used on a next call."""
-        SHEET_NAME = "sheet1"
-        with mock.patch("sheet_builder.SheetBuilder._login_on_github"):
-            builder = self._ss_mock._prepare_builder(SHEET_NAME)
-
-        self.assertIsInstance(builder, sheet_builder.SheetBuilder)
-        self.assertEqual(self._ss_mock._builders[SHEET_NAME], builder)
-
-        builder2 = self._ss_mock._prepare_builder(SHEET_NAME)
-        self.assertEqual(builder, builder2)
-
-    def test_update_all_sheets(self):
-        """Update sheets one by one."""
+    def test_create(self):
         ss_mock = SpreadsheetMock(CONFIG)
-        with mock.patch.object(ss_mock, attribute="update_sheet") as update_sheet:
-            ss_mock.update_all_sheets()
 
-            update_sheet.assert_has_calls((mock.call("sheet1"), mock.call("sheet2")))
+        execute_mock = mock.Mock(get=mock.Mock(return_value=SPREADSHEET_ID))
+        create_mock = mock.Mock(return_value=mock.Mock(execute=execute_mock))
+        ss_mock._ss_resource = mock.Mock(create=create_mock)
 
-    def test_reload_config(self):
-        """Test reloading the spreadsheet configurations."""
-        NEW_SHEETS = {"table1": {}}
-
-        new_config = ConfigMock()
-        new_config.SHEETS = NEW_SHEETS
-
-        self._ss_mock.reload_config(new_config)
-        self.assertEqual(self._ss_mock._config, new_config)
-
-    def test_apply_formating_data_w_requests(self):
-        """Check if batchUpdate() with given requests were called."""
-        REQUESTS = [{"req1": {}}]
-
-        execute_mock = mock.Mock()
-        batch_mock = mock.Mock(return_value=mock.Mock(execute=execute_mock))
-        self._ss_mock._ss_resource = mock.Mock(batchUpdate=batch_mock)
-        self._ss_mock._apply_formating_data(REQUESTS)
-
-        batch_mock.assert_called_once_with(
-            spreadsheetId=self._ss_mock._id, body={"requests": REQUESTS}
-        )
-
-    def test_apply_formating_data_no_requests(self):
-        """Check if batchUpdate() haven't been called in case of empty requests."""
-        execute_mock = mock.Mock()
-        self._ss_mock._ss_resource = mock.Mock(
-            batchUpdate=mock.Mock(return_value=mock.Mock(execute=execute_mock))
-        )
-        self._ss_mock._apply_formating_data([])
-
-        execute_mock.assert_not_called()
-
-    def test_clear_range(self):
-        """Check if clear() have been called on a proper range."""
-        clear_mock = mock.Mock()
-        self._ss_mock._ss_resource = mock.Mock(
-            values=mock.Mock(return_value=mock.Mock(clear=clear_mock))
-        )
-        self._ss_mock._clear_range("sheet_name", 100)
-
-        clear_mock.assert_called_once_with(
-            spreadsheetId=self._ss_mock._id, range="sheet_name!102:1000".format()
+        ss_mock._create()
+        create_mock.assert_called_once_with(
+            body={
+                "properties": {"title": "MockTitle"},
+                "sheets": [
+                    {"properties": {"title": "sheet1"}},
+                    {"properties": {"title": "sheet2"}},
+                ],
+            }
         )

@@ -1,15 +1,7 @@
-"""
-Funtions and objects, which uses Google Sheets API to
-build and update issues/PRs tables.
-"""
+"""API which controls Google Spreadsheet."""
 import logging
-import string
-import sheet_builder
 import auth
-import fill_funcs
-from utils import get_num_from_formula, BatchIterator
-from instances import Columns, Row
-from const import DIGITS_PATTERN
+from sheet import Sheet
 
 
 logging.basicConfig(
@@ -19,53 +11,11 @@ logging.basicConfig(
 )
 
 
-class CachedSheetsIds:
-    """
-    Posts request to get all the sheets of the
-    specified spreadsheet, and then keeps their numeric
-    ids in the inner dict for future needs.
-
-    Args:
-        spreadsheet_id (str):
-            Id of a spreadsheet, which sheets must be cached.
-    """
-
-    def __init__(self, resource, spreadsheet_id):
-        self._sheet_ids = {}
-        self._ss_resource = resource
-        self._spreadsheet_id = spreadsheet_id
-
-        self.update()
-
-    def update(self):
-        """Read sheet ids from the spreadsheet and save them internally."""
-        resp = self._ss_resource.get(spreadsheetId=self._spreadsheet_id).execute()
-
-        for sheet in resp["sheets"]:
-            props = sheet["properties"]
-            self._sheet_ids[props["title"]] = props["sheetId"]
-
-    def get(self, sheet_name):
-        """Get sheet's numeric id by it's name.
-
-        Args:
-            sheet_name (str): Name of sheet which id should be returned.
-
-        Returns: numeric id of the given sheet.
-        """
-        return self._sheet_ids.get(sheet_name)
-
-    @property
-    def as_dict(self):
-        """Return dict with names and numeric ids of sheets."""
-        return self._sheet_ids
-
-
 class Spreadsheet:
-    """Object for reading/updating Google spreadsheet.
+    """Object related to a Google spreadsheet.
 
-    Uses 'config' attr to update spreasheet's structure,
-    and SheetBuilders to fill sheets with issues/PRs data.
+    Uses `config` attr to update spreasheet structure.
+    Requires manual configurations reloading.
 
     Args:
         config (module):
@@ -73,19 +23,15 @@ class Spreadsheet:
             spreadsheet preferences.
 
         id_ (str):
-            Id of the existing spreadsheet. If not given,
+            Id of the related spreadsheet. If not given,
             new spreadsheet will be created.
     """
 
     def __init__(self, config, id_=None):
-        self._builders = {}  # table builders for every sheet
         self._config = config
-        self._columns = []
-        self._ss_resource = None  # spreadsheet Resource object
-
-        self._login_on_google()
-        self._id = id_ or self._create_spreadsheet()
-        self._sheets_ids = CachedSheetsIds(self._ss_resource, self._id)
+        self._ss_resource = auth.authenticate()
+        self._id = id_ or self._create()
+        self._sheets = self._init_sheets()
 
     @property
     def id(self):
@@ -102,12 +48,12 @@ class Spreadsheet:
     def update_structure(self):
         """Update spreadsheet structure.
 
-        Rename the spreadsheet, if name in config.py has been
+        Rename the spreadsheet, if name in `config` has been
         changed. Add new sheets into the spreadsheet, delete
         sheets deleted from the configurations.
         """
         try:
-            logging.info("updating spreadsheet {id_}".format(id_=self._id))
+            logging.info("Updating spreadsheet {id_} structure".format(id_=self._id))
             # spreadsheet rename request
             requests = [
                 {
@@ -117,140 +63,97 @@ class Spreadsheet:
                     }
                 }
             ]
-            self._sheets_ids.update()
             sheets_in_conf = tuple(self._config.SHEETS.keys())
 
-            new_sheets_reqs = self._build_new_sheets_requests(sheets_in_conf)
-            requests += new_sheets_reqs
-            del_sheets_reqs = self._build_delete_sheets_requests(sheets_in_conf)
-            requests += del_sheets_reqs
+            requests += self._build_new_sheets_requests(sheets_in_conf)
+            requests += self._build_delete_sheets_requests(sheets_in_conf)
 
             self._ss_resource.batchUpdate(
                 spreadsheetId=self._id, body={"requests": requests}
             ).execute()
 
-            if new_sheets_reqs or del_sheets_reqs:
-                self._sheets_ids.update()
+            if len(requests) > 1:  # not only rename request
+                self._actualize_sheets()
 
-            logging.info("updated")
+            logging.info("Updated spreadsheet {id_} structure".format(id_=self._id))
         except Exception:
             logging.exception("Exception occured:")
 
     def update_all_sheets(self):
-        """Update all the sheets from the configurations one by one."""
-        for sheet_name in self._config.SHEETS.keys():
-            logging.info("updating " + sheet_name)
+        """Update all the sheets one by one."""
+        for sheet_name, sheet in self._sheets.items():
+            logging.info("Updating sheet " + sheet_name)
             try:
-                self.update_sheet(sheet_name)
-                logging.info("updated")
+                sheet.update(self._ss_resource)
+                logging.info("Updated sheet " + sheet_name)
             except Exception:
                 logging.exception("Exception occured:")
 
-    def update_sheet(self, sheet_name):
-        """Update specified sheet with issues/PRs data.
-
-        Args:
-            sheet_name (str): Name of the sheet to be updated.
-        """
-        builder = self._prepare_builder(sheet_name)
-        raw_new_table = builder.retrieve_updated()
-        tracked_issues = self._read_sheet(sheet_name)
-
-        to_be_deleted = []
-        # merging the new table into the old one
-        for tracked_id in tracked_issues.keys():
-            updated_issue = None
-            if tracked_id in raw_new_table:
-                updated_issue = raw_new_table.pop(tracked_id)
-            # on a first update check old (closed issues included)
-            # rows too in case of Scraper restarts
-            elif builder.first_update:
-                updated_issue = builder.read_issue(*tracked_id)
-            # if issue wasn't updated, take it's last
-            # version from internal index
-            else:
-                updated_issue = builder.get_from_index(tracked_id)
-
-            prs = builder.get_related_prs(tracked_id)
-            if updated_issue:
-                # update columns using fill function
-                for col in self._columns.names:
-                    self._columns.fill_funcs[col](
-                        tracked_issues[tracked_id],
-                        updated_issue,
-                        sheet_name,
-                        self._config.SHEETS[sheet_name],
-                        prs,
-                        False,
-                    )
-
-            to_del = fill_funcs.to_be_deleted(
-                tracked_issues[tracked_id], updated_issue, prs
-            )
-            if to_del:
-                to_be_deleted.append(tracked_id)
-
-        for id_ in to_be_deleted:
-            tracked_issues.pop(id_)
-            builder.delete_from_index(id_)
-
-        self._insert_new_issues(tracked_issues, raw_new_table, sheet_name)
-        new_table, requests = self._rows_to_lists(tracked_issues.values(), sheet_name)
-
-        self._format_sheet(sheet_name)
-        self._insert_into_sheet(sheet_name, new_table, "A2")
-
-        self._clear_range(sheet_name, len(tracked_issues))
-        self._apply_formating_data(requests)
-        builder.first_update = False
-
     def reload_config(self, config):
-        """Save config.py module into spreadsheet object.
+        """Save new config.py module.
 
         Args:
             config (module):
                 Imported config.py module with all preferences.
         """
         self._config = config
+        for sheet_name, sheet in self._sheets.items():
+            sheet.reload_config(self._config.SHEETS[sheet_name])
 
-    def _prepare_builder(self, sheet_name):
-        """Init new SheetBuilder or return the existing one.
-
-        Args:
-            sheet_name (str):
-                Name of the sheet, for which builder should be prepared.
+    def _init_sheets(self):
+        """Init Sheet object for every sheet in this spreadsheet.
 
         Returns:
-            SheetBuilder: Sheet builder, prepared for work.
+            dict: {<sheet_name>: <sheet.Sheet>} - sheets index.
         """
-        if sheet_name not in self._builders:
-            self._builders[sheet_name] = sheet_builder.SheetBuilder()
+        sheets = {}
+        resp = self._ss_resource.get(spreadsheetId=self._id).execute()
 
-        self._builders[sheet_name].update_config(self._config.SHEETS[sheet_name])
-        return self._builders[sheet_name]
+        for sheet in resp["sheets"]:
+            props = sheet["properties"]
+            sheets[props["title"]] = Sheet(props["title"], self._id, props["sheetId"])
+
+        return sheets
+
+    def _actualize_sheets(self):
+        """Update sheets index of this spreadsheet.
+
+        This method removes Sheet object of the sheets which were
+        deleted, sets ids for Sheet objects of newly created sheets.
+        """
+        sheets_in_spreadsheet = []
+        to_delete = []
+
+        resp = self._ss_resource.get(spreadsheetId=self._id).execute()
+        for sheet in resp["sheets"]:
+            props = sheet["properties"]
+            self._sheets[props["title"]].id = props["sheetId"]
+            sheets_in_spreadsheet.append(props["title"])
+
+        for sheet_name, sheet in self._sheets.items():
+            if sheet_name not in sheets_in_spreadsheet:
+                to_delete.append(sheet_name)
+                continue
+
+        for sheet_name in to_delete:
+            self._sheets.pop(sheet_name)
 
     def _build_new_sheets_requests(self, sheets_in_conf):
         """Build add-new-sheet requests for the new sheets.
 
         Args:
-            sheets_on_conf (tuple): Sheets list from the configurations.
+            sheets_in_conf (tuple): Sheets list from the configurations.
 
         Returns:
             list: List of add-new-sheet requests.
         """
         new_sheets_reqs = []
+
         for sheet_name in sheets_in_conf:
-            if not self._sheets_ids.get(sheet_name):
-                new_sheets_reqs.append(
-                    {
-                        "addSheet": {
-                            "properties": {
-                                "title": sheet_name,
-                                "gridProperties": {"rowCount": 1000, "columnCount": 26},
-                            }
-                        }
-                    }
-                )
+            if sheet_name not in self._sheets.keys():
+                self._sheets[sheet_name] = Sheet(sheet_name, self._id)
+                new_sheets_reqs.append(self._sheets[sheet_name].create_request)
+
         return new_sheets_reqs
 
     def _build_delete_sheets_requests(self, sheets_in_conf):
@@ -265,19 +168,14 @@ class Spreadsheet:
             list: List of delete-sheet requests.
         """
         del_sheets_reqs = []
-        sheets = self._sheets_ids.as_dict
 
-        for sheet_name in sheets.keys():
+        for sheet_name, sheet in self._sheets.items():
             if sheet_name not in sheets_in_conf:
-                del_sheets_reqs.append({"deleteSheet": {"sheetId": sheets[sheet_name]}})
+                del_sheets_reqs.append(sheet.delete_request)
 
         return del_sheets_reqs
 
-    def _login_on_google(self):
-        """Login on Google Spreadsheet service."""
-        self._ss_resource = auth.authenticate().spreadsheets()
-
-    def _create_spreadsheet(self):
+    def _create(self):
         """Create new spreadsheet according to config.
 
         Returns:
@@ -290,201 +188,6 @@ class Spreadsheet:
             }
         ).execute()
         return spreadsheet.get("spreadsheetId")
-
-    def _clear_range(self, sheet_name, length):
-        """Clear cells from the last table row till the end.
-
-        Args:
-            sheet_name (str): Sheet name.
-            length (int): Length of issues list.
-        """
-        sym_range = "{sheet_name}!{start_from}:1000".format(
-            sheet_name=sheet_name, start_from=length + 2
-        )
-
-        self._ss_resource.values().clear(
-            spreadsheetId=self._id, range=sym_range
-        ).execute()
-
-    def _format_sheet(self, sheet_name):
-        """Update sheet structure.
-
-        Create title row in the specified sheet, format columns
-        and add data validation according to config module.
-
-        Args:
-            sheet_name (str): Name of the sheet, which must be formatted.
-        """
-        self._columns = Columns(
-            self._config.SHEETS[sheet_name]["columns"], self._sheets_ids.get(sheet_name)
-        )
-        self._insert_into_sheet(sheet_name, [self._columns.names], "A1")
-        self._apply_formating_data(self._columns.requests)
-
-    def _rows_to_lists(self, tracked_issues, sheet_name):
-        """Convert every Row into list.
-
-        Args:
-            tracked_issues (list): Rows, each of which represents single row.
-            sheet_name (str): Name of sheet to be updated.
-
-        Returns:
-            list: Lists, each of which represents single row.
-            list: Dicts, each of which represents single coloring request.
-        """
-        requests = []
-
-        new_table = list(tracked_issues)
-        new_table.sort(key=self._config.sort_func)
-
-        # convert rows into lists
-        for index, row in enumerate(new_table):
-            new_table[index] = row.as_list[: len(self._columns.names)]
-
-            for col, color in row.colors.items():
-                requests.append(
-                    _gen_color_request(
-                        self._sheets_ids.get(sheet_name),
-                        index + 1,
-                        self._columns.names.index(col),
-                        color,
-                    )
-                )
-        return new_table, requests
-
-    def _insert_new_issues(self, tracked_issues, new_issues, sheet_name):
-        """Insert new issues into tracked issues index.
-
-        Args:
-            tracked_issues (dict): Index of tracked issues.
-            new_issues (dict): Index with only recently created issues.
-        """
-        for new_id in new_issues.keys():
-            tracked_issues[new_id] = Row(self._columns.names)
-            prs = self._builders[sheet_name].get_related_prs(new_id)
-
-            for col in self._columns.names:
-                self._columns.fill_funcs[col](
-                    tracked_issues[new_id],
-                    new_issues[new_id],
-                    sheet_name,
-                    self._config.SHEETS[sheet_name],
-                    prs,
-                    True,
-                )
-
-    def _read_sheet(self, sheet_name):
-        """
-        Read data from the specified existing sheet.
-
-        Args:
-            sheet_name (str): Name of the sheet to be read.
-
-        Returns:
-            dict: Issues index.
-        """
-        table = (
-            self._ss_resource.values()
-            .get(spreadsheetId=self._id, range=sheet_name, valueRenderOption="FORMULA")
-            .execute()
-            .get("values")
-        )
-
-        if table is None:
-            self._format_sheet(sheet_name)
-            table = (
-                self._ss_resource.values()
-                .get(
-                    spreadsheetId=self._id,
-                    range=sheet_name,
-                    valueRenderOption="FORMULA",
-                )
-                .execute()["values"]
-            )
-        title_row, table = table[0], table[1:]
-
-        _convert_to_rows(title_row, table)
-        sheet_id = self._sheets_ids.get(sheet_name)
-
-        self._columns = Columns(self._config.SHEETS[sheet_name]["columns"], sheet_id)
-        return _build_index(table, title_row)
-
-    def _insert_into_sheet(self, sheet_name, rows, start_from):
-        """Write new data into the specified sheet.
-
-        Args:
-            sheet_name (str):
-                Name of the sheet that must be updated.
-
-            rows (list):
-                Lists, each of which represents single
-                row in the sheet.
-
-            start_from (str):
-                Symbolic index, from which data insertion
-                must start.
-        """
-        start_index = int(DIGITS_PATTERN.findall(start_from)[0])
-
-        sym_range = "{start_from}:{last_sym}{count}".format(
-            start_from=start_from,
-            last_sym=string.ascii_uppercase[len(rows[0]) - 1],
-            count=len(rows) + start_index + 1,
-        )
-
-        self._ss_resource.values().update(
-            spreadsheetId=self._id,
-            range=sheet_name + "!" + sym_range,
-            valueInputOption="USER_ENTERED",
-            body={"values": rows},
-        ).execute()
-
-    def _apply_formating_data(self, requests):
-        """Apply formating data with batch update.
-
-        Args:
-            requests (list):
-                Dicts, each of which represents single request.
-        """
-        if requests:
-            for batch in BatchIterator(requests):
-                self._ss_resource.batchUpdate(
-                    spreadsheetId=self._id, body={"requests": batch}
-                ).execute()
-
-
-def _build_index(table, column_names):
-    """
-    Build dict containing:
-    {
-        (issue_number, repo_name): Row
-    }
-
-    Args:
-        table (list): Lists, each of which represents single row.
-        column_names (list): Tracked columns names.
-
-    Returns: Dict, which values represents rows.
-    """
-    index = {}
-    for row in table:
-        key = (get_num_from_formula(row["Issue"]), row["Repository"])
-        index[key] = Row(column_names)
-        index[key].update(row)
-    return index
-
-
-def _convert_to_rows(title_row, table):
-    """Convert every list into Row.
-
-    Args:
-        title_row (list): Tracked columns.
-        table (list): Lists, eah of which represents single row.
-    """
-    for index, row in enumerate(table):
-        new_row = Row(title_row)
-        new_row.fill_from_list(row)
-        table[index] = new_row
 
 
 def _gen_sheets_struct(sheets_config):
@@ -502,26 +205,3 @@ def _gen_sheets_struct(sheets_config):
         sheets.append({"properties": {"title": sheet_name}})
 
     return sheets
-
-
-def _gen_color_request(sheet_id, row, column, color):
-    """Request, that changes color of specified cell."""
-    request = {
-        "repeatCell": {
-            "fields": "userEnteredFormat",
-            "range": {
-                "sheetId": sheet_id,
-                "startRowIndex": row,
-                "endRowIndex": row + 1,
-                "startColumnIndex": column,
-                "endColumnIndex": column + 1,
-            },
-            "cell": {
-                "userEnteredFormat": {
-                    "backgroundColor": color,
-                    "horizontalAlignment": "CENTER",
-                }
-            },
-        }
-    }
-    return request

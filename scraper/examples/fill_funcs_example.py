@@ -27,7 +27,7 @@ is_new (bool): New issue in table.
 """
 import datetime
 from const import GREY
-from utils import build_url_formula, designate_status_color
+from utils import build_url_formula, designate_status_color, get_num_from_formula
 
 
 def fill_priority(old_issue, issue, sheet_name, sheet_config, prs, is_new):
@@ -101,19 +101,18 @@ def fill_description(old_issue, issue, sheet_name, sheet_config, prs, is_new):
 
 def fill_assignee(old_issue, issue, sheet_name, sheet_config, prs, is_new):
     """'Assignee' column filling."""
-    assignee = issue.assignee
-    if (
-        old_issue["Assignee"] not in sheet_config["columns"][7]["values"]
-        or old_issue["Assignee"] == "N/A"
-    ):
-        if assignee:
-            old_issue["Assignee"] = (
-                assignee.login
-                if assignee.login in sheet_config["columns"][7]["values"]
-                else "Other"
-            )
-        else:
-            old_issue["Assignee"] = "N/A"
+    one_of_us = False
+
+    if issue.assignees:
+        for assignee in issue.assignees:
+            if assignee.login in sheet_config["columns"][7]["values"]:
+                one_of_us = True
+                old_issue["Assignee"] = assignee.login
+                break
+        if not one_of_us:
+            old_issue["Assignee"] = "Other"
+    else:
+        old_issue["Assignee"] = "N/A"
 
 
 def fill_repository(old_issue, issue, sheet_name, sheet_config, prs, is_new):
@@ -187,3 +186,12 @@ def to_be_deleted(row, issue, prs):
     if issue and issue.closed_at and row["Assignee"] in ("Other", "N/A"):
         return True
     return False
+
+
+def sort_func(row):
+    """Sorts data within single one sheet.
+
+    Args:
+        row (dict): Dict representation of a single row.
+    """
+    return row["Repository"], row["Project"], int(get_num_from_formula(row["Issue"]))

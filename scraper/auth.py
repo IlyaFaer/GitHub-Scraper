@@ -32,4 +32,4 @@ def authenticate():
             pickle.dump(creds, token)
 
     service = build("sheets", "v4", credentials=creds)
-    return service
+    return service.spreadsheets()
