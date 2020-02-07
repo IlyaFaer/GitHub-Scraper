@@ -55,7 +55,7 @@ class Sheet:
         return {"deleteSheet": {"sheetId": self.id}}
 
     def reload_config(self, config):
-        """Reload sheet configuratons.
+        """Reload sheet configurations.
 
         Args:
             config (dict): Sheet configurations.
@@ -118,11 +118,7 @@ class Sheet:
         self._builder.first_update = False
 
     def _prepare_builder(self):
-        """Initiate builder for this sheet.
-
-        Returns:
-            sheet_builder.SheetBuilder: Sheet builder, prepared for work.
-        """
+        """Initiate builder for this sheet."""
         if self._builder is None:
             self._builder = sheet_builder.SheetBuilder()
 
@@ -180,7 +176,7 @@ class Sheet:
 
     def _read(self, ss_resource):
         """
-        Read data from the specified existing sheet.
+        Read data from this sheet.
 
         Returns:
             dict: Issues index.
