@@ -25,7 +25,7 @@ class PullRequestsIndex(dict):
         # time when any PR was last updated in specific repo
         self._last_pr_updates = {}
 
-    def update_config(self, in_repo_names):
+    def reload_config(self, in_repo_names):
         """Update list of internal repos.
 
         Args:

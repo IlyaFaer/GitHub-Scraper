@@ -31,7 +31,7 @@ class Spreadsheet:
         self._config = config
         self._ss_resource = auth.authenticate()
         self._id = id_ or self._create()
-        self._sheets = self._init_sheets()
+        self.sheets = self._init_sheets()
 
     @property
     def id(self):
@@ -81,7 +81,7 @@ class Spreadsheet:
 
     def update_all_sheets(self):
         """Update all the sheets one by one."""
-        for sheet_name, sheet in self._sheets.items():
+        for sheet_name, sheet in self.sheets.items():
             logging.info("Updating sheet " + sheet_name)
             try:
                 sheet.update(self._ss_resource)
@@ -97,7 +97,7 @@ class Spreadsheet:
                 Imported config.py module with all preferences.
         """
         self._config = config
-        for sheet_name, sheet in self._sheets.items():
+        for sheet_name, sheet in self.sheets.items():
             sheet.reload_config(self._config.SHEETS[sheet_name])
 
     def _init_sheets(self):
@@ -127,16 +127,16 @@ class Spreadsheet:
         resp = self._ss_resource.get(spreadsheetId=self._id).execute()
         for sheet in resp["sheets"]:
             props = sheet["properties"]
-            self._sheets[props["title"]].id = props["sheetId"]
+            self.sheets[props["title"]].id = props["sheetId"]
             sheets_in_spreadsheet.append(props["title"])
 
-        for sheet_name, sheet in self._sheets.items():
+        for sheet_name, sheet in self.sheets.items():
             if sheet_name not in sheets_in_spreadsheet:
                 to_delete.append(sheet_name)
                 continue
 
         for sheet_name in to_delete:
-            self._sheets.pop(sheet_name)
+            self.sheets.pop(sheet_name)
 
     def _build_new_sheets_requests(self, sheets_in_conf):
         """Build add-new-sheet requests for the new sheets.
@@ -150,9 +150,9 @@ class Spreadsheet:
         new_sheets_reqs = []
 
         for sheet_name in sheets_in_conf:
-            if sheet_name not in self._sheets.keys():
-                self._sheets[sheet_name] = Sheet(sheet_name, self._id)
-                new_sheets_reqs.append(self._sheets[sheet_name].create_request)
+            if sheet_name not in self.sheets.keys():
+                self.sheets[sheet_name] = Sheet(sheet_name, self._id)
+                new_sheets_reqs.append(self.sheets[sheet_name].create_request)
 
         return new_sheets_reqs
 
@@ -169,7 +169,7 @@ class Spreadsheet:
         """
         del_sheets_reqs = []
 
-        for sheet_name, sheet in self._sheets.items():
+        for sheet_name, sheet in self.sheets.items():
             if sheet_name not in sheets_in_conf:
                 del_sheets_reqs.append(sheet.delete_request)
 

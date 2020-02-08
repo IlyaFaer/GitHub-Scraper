@@ -10,7 +10,7 @@ class Columns:
         cols (list):
             Dicts, each of which describes single column.
 
-        sheet_id (int): Numeric sheet's id.
+        sheet_id (int): Numeric sheet id.
     """
 
     def __init__(self, cols, sheet_id):
@@ -36,6 +36,9 @@ class Columns:
         """
         Return all column requests. Title row request
         must be first!
+
+        Returns:
+            list: Columns formatting requests.
         """
         self._requests.insert(0, self._title_row_request)
         return self._requests
@@ -46,13 +49,18 @@ class Columns:
         Args:
             column (str): Name of column.
 
-        Returns: Letter coordinate of column (str).
+        Returns:
+            str: Letter coordinate of the column.
         """
         return string.ascii_uppercase[self.names.index(column)]
 
     @property
     def _title_row_request(self):
-        """Bolding and aligning title row."""
+        """Bolding and aligning title row.
+
+        Returns:
+            dict: Title row formatting request.
+        """
         request = {
             "repeatCell": {
                 "fields": "userEnteredFormat",
@@ -77,6 +85,10 @@ class Columns:
         """
         Request to set date format for column, that
         designed to contain dates.
+
+        Args:
+            index (int): Column index.
+            col (dict): Column description.
         """
         if col.get("type") == "date":
             request = {
@@ -97,7 +109,12 @@ class Columns:
             self._requests.append(request)
 
     def _gen_align_request(self, index, col):
-        """Aligning request for column."""
+        """Aligning request for column.
+
+        Args:
+            index (int): Column index.
+            col (dict): Column description.
+        """
         if "align" in col.keys():
             request = {
                 "repeatCell": {
@@ -117,7 +134,12 @@ class Columns:
             self._requests.append(request)
 
     def _gen_color_requests(self, index, col):
-        """Requests to set color for specific values in cell."""
+        """Requests to set color for specific values in cell.
+
+        Args:
+            index (int): Column index.
+            col (dict): Column description.
+        """
         if "values" in col.keys() and isinstance(col["values"], dict):
             for value, color in col["values"].items():
                 self._requests.append(
@@ -145,7 +167,12 @@ class Columns:
                 )
 
     def _gen_size_request(self, index, col):
-        """Request to set column's width."""
+        """Request to set column's width.
+
+        Args:
+            index (int): Column index.
+            col (dict): Column description.
+        """
         if "width" in col.keys():
             request = {
                 "updateDimensionProperties": {
@@ -163,7 +190,12 @@ class Columns:
             self._requests.append(request)
 
     def _gen_one_of_request(self, index, col):
-        """Request to set data validation."""
+        """Request to set data validation.
+
+        Args:
+            index (int): Column index.
+            col (dict): Column description.
+        """
         if "values" in col.keys():
             if isinstance(col["values"], dict):
                 vals = [{"userEnteredValue": key} for key in col["values"].keys()]
@@ -190,7 +222,7 @@ class Columns:
 
 
 class Row(dict):
-    """Dict-like representation of single row.
+    """Dict-like representation of a single row.
 
     Args:
         column_names (list): List of column names.
@@ -221,8 +253,11 @@ class Row(dict):
 
     def fill_from_list(self, list_):
         """
-        Fill dict from list. Connections between fields
+        Fill dict from the list. Relations between fields
         and list elements are designated by columns list.
+
+        Args:
+            list_ (list): List representation of the row.
         """
         for index, name in enumerate(self._column_names):
             if index < len(list_):

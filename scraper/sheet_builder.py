@@ -109,7 +109,7 @@ class SheetBuilder:
         self._issues_index[(issue_num, repo_lts)] = issue
         return issue
 
-    def update_config(self, config):
+    def reload_config(self, config):
         """Update builder's configurations - list of tracked repos.
 
         Args:
@@ -118,7 +118,7 @@ class SheetBuilder:
         self._repo_names = config["repo_names"]
         self._in_repo_names = config.get("internal_repo_names", {})
 
-        self.prs_index.update_config(self._in_repo_names)
+        self.prs_index.reload_config(self._in_repo_names)
         self._repo_names_inverse = dict((v, k) for k, v in self._repo_names.items())
 
     def get_related_prs(self, issue_id):

@@ -66,31 +66,31 @@ class Sheet:
         """Update specified sheet with issues/PRs data."""
         self._prepare_builder()
 
-        raw_new_table = self._builder.retrieve_updated()
+        updated_issues = self._builder.retrieve_updated()
         tracked_issues = self._read(ss_resource)
 
         to_be_deleted = []
         # merging the new table into the old one
         for tracked_id in tracked_issues.keys():
-            updated_issue = None
-            if tracked_id in raw_new_table:
-                updated_issue = raw_new_table.pop(tracked_id)
+            issue_obj = None
+            if tracked_id in updated_issues:
+                issue_obj = updated_issues.pop(tracked_id)
             # on a first update check old (closed issues included)
             # rows too in case of Scraper restarts
             elif self._builder.first_update:
-                updated_issue = self._builder.read_issue(*tracked_id)
+                issue_obj = self._builder.read_issue(*tracked_id)
             # if issue wasn't updated, take it's last
             # version from internal index
             else:
-                updated_issue = self._builder.get_from_index(tracked_id)
+                issue_obj = self._builder.get_from_index(tracked_id)
 
             prs = self._builder.get_related_prs(tracked_id)
-            if updated_issue:
+            if issue_obj:
                 # update columns using fill function
                 for col in self._columns.names:
                     self._columns.fill_funcs[col](
                         tracked_issues[tracked_id],
-                        updated_issue,
+                        issue_obj,
                         self.name,
                         self._config,
                         prs,
@@ -98,7 +98,7 @@ class Sheet:
                     )
 
                 to_del = fill_funcs.to_be_deleted(
-                    tracked_issues[tracked_id], updated_issue, prs
+                    tracked_issues[tracked_id], issue_obj, prs
                 )
                 if to_del:
                     to_be_deleted.append(tracked_id)
@@ -107,7 +107,7 @@ class Sheet:
             tracked_issues.pop(id_)
             self._builder.delete_from_index(id_)
 
-        self._insert_new_issues(tracked_issues, raw_new_table)
+        self._insert_new_issues(tracked_issues, updated_issues)
         new_table, requests = self._prepare_table(tracked_issues.values())
 
         self._format_sheet(ss_resource)
@@ -122,7 +122,7 @@ class Sheet:
         if self._builder is None:
             self._builder = sheet_builder.SheetBuilder()
 
-        self._builder.update_config(self._config)
+        self._builder.reload_config(self._config)
 
     def _insert(self, ss_resource, rows, start_from):
         """Write new data into this sheet.
@@ -210,6 +210,7 @@ class Sheet:
 
         Args:
             length (int): Length of issues list.
+            width (int): Number of columns in range to clear.
         """
         sym_range = "{sheet_name}!A{start_from}:{end}".format(
             sheet_name=self.name,
@@ -291,7 +292,8 @@ def _build_index(table, column_names):
         table (list): Lists, each of which represents single row.
         column_names (list): Tracked columns names.
 
-    Returns: Dict, which values represents rows.
+    Returns:
+        dict: Index of Rows.
     """
     index = {}
     for row in table:
@@ -302,7 +304,17 @@ def _build_index(table, column_names):
 
 
 def _gen_color_request(sheet_id, row, column, color):
-    """Request, that changes color of specified cell."""
+    """Request, that changes color of specified cell.
+
+    Args:
+        sheet_id (int): Numeric sheet id.
+        row (int): Number of the row to highlight with color.
+        column (int): Number of the column to highlight with color.
+        color (str): Color code.
+
+    Returns:
+        dict: Highlighting request.
+    """
     request = {
         "repeatCell": {
             "fields": "userEnteredFormat",
