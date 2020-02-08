@@ -113,7 +113,7 @@ class Sheet:
         self._format_sheet(ss_resource)
         self._insert(ss_resource, new_table, "A2")
 
-        self._clear_bottom(ss_resource, len(tracked_issues))
+        self._clear_bottom(ss_resource, len(tracked_issues), len(self._columns.names))
         self._post_requests(ss_resource, requests)
         self._builder.first_update = False
 
@@ -205,14 +205,16 @@ class Sheet:
         self._columns = Columns(self._config["columns"], self.id)
         return _build_index(table, title_row)
 
-    def _clear_bottom(self, ss_resource, length):
+    def _clear_bottom(self, ss_resource, length, width):
         """Clear cells from the last actual row till the end.
 
         Args:
             length (int): Length of issues list.
         """
-        sym_range = "{sheet_name}!{start_from}:1000".format(
-            sheet_name=self.name, start_from=length + 2
+        sym_range = "{sheet_name}!A{start_from}:{end}".format(
+            sheet_name=self.name,
+            start_from=length + 2,
+            end=string.ascii_uppercase[width - 1],
         )
         ss_resource.values().clear(spreadsheetId=self.ss_id, range=sym_range).execute()
 

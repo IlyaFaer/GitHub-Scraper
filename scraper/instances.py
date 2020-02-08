@@ -83,8 +83,6 @@ class Columns:
                 "repeatCell": {
                     "range": {
                         "sheetId": self._sheet_id,
-                        "startRowIndex": 0,
-                        "endRowIndex": 1000,
                         "startColumnIndex": index,
                         "endColumnIndex": index + 1,
                     },
@@ -107,7 +105,6 @@ class Columns:
                     "range": {
                         "sheetId": self._sheet_id,
                         "startRowIndex": 1,
-                        "endRowIndex": 1000,
                         "startColumnIndex": index,
                         "endColumnIndex": index + 1,
                     },
@@ -131,7 +128,6 @@ class Columns:
                                     {
                                         "sheetId": self._sheet_id,
                                         "startRowIndex": 1,
-                                        "endRowIndex": 1000,
                                         "startColumnIndex": index,
                                         "endColumnIndex": index + 1,
                                     }
@@ -179,7 +175,6 @@ class Columns:
                     "range": {
                         "sheetId": self._sheet_id,
                         "startRowIndex": 1,
-                        "endRowIndex": 1000,
                         "startColumnIndex": index,
                         "endColumnIndex": index + 1,
                     },
