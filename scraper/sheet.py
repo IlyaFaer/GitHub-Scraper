@@ -175,8 +175,7 @@ class Sheet:
         self._post_requests(ss_resource, self._columns.requests)
 
     def _read(self, ss_resource):
-        """
-        Read data from this sheet.
+        """Read data from this sheet.
 
         Returns:
             dict: Issues index.
@@ -200,7 +199,6 @@ class Sheet:
                 .execute()["values"]
             )
         title_row, table = table[0], table[1:]
-        _convert_to_rows(title_row, table)
 
         self._columns = Columns(self._config["columns"], self.id)
         return _build_index(table, title_row)
@@ -268,19 +266,6 @@ class Sheet:
                 )
 
 
-def _convert_to_rows(title_row, table):
-    """Convert every list into Row.
-
-    Args:
-        title_row (list): Tracked columns.
-        table (list): Lists, eah of which represents single row.
-    """
-    for index, row in enumerate(table):
-        new_row = Row(title_row)
-        new_row.fill_from_list(row)
-        table[index] = new_row
-
-
 def _build_index(table, column_names):
     """
     Build dict containing:
@@ -295,12 +280,15 @@ def _build_index(table, column_names):
     Returns:
         dict: Index of Rows.
     """
-    index = {}
-    for row in table:
+    issues_index = {}
+    for list_ in table:
+        row = Row(column_names)
+        row.fill_from_list(list_)
+
         key = (get_num_from_formula(row["Issue"]), row["Repository"])
-        index[key] = Row(column_names)
-        index[key].update(row)
-    return index
+        issues_index[key] = row
+
+    return issues_index
 
 
 def _gen_color_request(sheet_id, row, column, color):
