@@ -3,6 +3,7 @@ Utils for reading data from GitHub and building
 them into convenient structures.
 """
 import datetime
+import logging
 from const import PATTERNS
 from github import Github
 from pr_index import PullRequestsIndex
@@ -191,19 +192,35 @@ class SheetBuilder:
             repo (github.Repository.Repository):
                 Repository object.
         """
+        is_first_update = False
         pulls = repo.get_pulls(state="closed", sort="updated", direction="desc")
+
         if pulls.totalCount:
-            for pull in pulls:
-                if pull.updated_at < self._last_pr_updates.setdefault(
-                    repo.full_name, datetime.datetime(1, 1, 1)
-                ):
+            logging.info("{repo}: indexing pull requests".format(repo=repo.full_name))
+            for index, pull in enumerate(pulls):
+                if repo.full_name not in self._last_pr_updates.keys():
+                    self._last_pr_updates[repo.full_name] = datetime.datetime(1, 1, 1)
+                    is_first_update = True
+
+                if pull.updated_at < self._last_pr_updates[repo.full_name]:
                     break
 
                 key_phrases = self._try_match_keywords(pull.body)
                 for key_phrase in key_phrases:
                     self.prs_index.add(repo, self._get_repo_lts(repo), pull, key_phrase)
 
+                if is_first_update and pulls.totalCount > 800:
+                    if (index + 1) % 200 == 0:
+                        logging.info(
+                            "processed {num} of {total} pull requests".format(
+                                num=index + 1, total=pulls.totalCount
+                            )
+                        )
+
             self._last_pr_updates[repo.full_name] = pulls[0].updated_at
+            logging.info(
+                "{repo}: all pull requests indexed".format(repo=repo.full_name)
+            )
 
     def _build_issues_id(self, issue, repo):
         """Designate issue's id. If issue is PR, index it.
