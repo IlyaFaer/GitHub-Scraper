@@ -12,7 +12,7 @@ logging.basicConfig(
 
 
 class Spreadsheet:
-    """Object related to a Google spreadsheet.
+    """Object related to a concrete Google spreadsheet.
 
     Uses `config` attr to update spreasheet structure.
     Requires manual configurations reloading.
@@ -24,7 +24,7 @@ class Spreadsheet:
 
         id_ (str):
             Id of the related spreadsheet. If not given,
-            new spreadsheet will be created.
+            new spreadsheet will be created on object init.
     """
 
     def __init__(self, config, id_=None):
@@ -90,11 +90,14 @@ class Spreadsheet:
                 logging.exception("Exception occured:")
 
     def reload_config(self, config):
-        """Save new config.py module.
+        """Load new configurations.
+
+        Set new configurations to this spreadsheet and all
+        of it's sheets.
 
         Args:
             config (module):
-                Imported config.py module with all preferences.
+                Imported config.py module with preferences.
         """
         self._config = config
         for sheet_name, sheet in self.sheets.items():
@@ -111,27 +114,33 @@ class Spreadsheet:
 
         for sheet in resp["sheets"]:
             props = sheet["properties"]
-            sheets[props["title"]] = Sheet(props["title"], self._id, props["sheetId"])
+            name = props["title"]
+            sheets[name] = Sheet(name, self._id, props["sheetId"])
 
         return sheets
 
     def _actualize_sheets(self):
         """Update sheets index of this spreadsheet.
 
-        This method removes Sheet object of the sheets which were
-        deleted, sets ids for Sheet objects of newly created sheets.
+        This method removes Sheet() objects of the sheets which
+        were not found in configurations, and sets ids for
+        the Sheet() objects of newly created sheets.
         """
-        sheets_in_spreadsheet = []
+        sheets_in_ss = []
         to_delete = []
 
         resp = self._ss_resource.get(spreadsheetId=self._id).execute()
+        # update sheets ids from the real spreadsheet
         for sheet in resp["sheets"]:
             props = sheet["properties"]
-            self.sheets[props["title"]].id = props["sheetId"]
-            sheets_in_spreadsheet.append(props["title"])
+            name = props["title"]
 
+            self.sheets[name].id = props["sheetId"]
+            sheets_in_ss.append(name)
+
+        # check for Sheet()'s, which are no more in the spreadsheet
         for sheet_name, sheet in self.sheets.items():
-            if sheet_name not in sheets_in_spreadsheet:
+            if sheet_name not in sheets_in_ss:
                 to_delete.append(sheet_name)
                 continue
 
@@ -147,14 +156,14 @@ class Spreadsheet:
         Returns:
             list: List of add-new-sheet requests.
         """
-        new_sheets_reqs = []
+        add_sheet_reqs = []
 
-        for sheet_name in sheets_in_conf:
-            if sheet_name not in self.sheets.keys():
-                self.sheets[sheet_name] = Sheet(sheet_name, self._id)
-                new_sheets_reqs.append(self.sheets[sheet_name].create_request)
+        for name in sheets_in_conf:
+            if name not in self.sheets.keys():
+                self.sheets[name] = Sheet(name, self._id)
+                add_sheet_reqs.append(self.sheets[name].create_request)
 
-        return new_sheets_reqs
+        return add_sheet_reqs
 
     def _build_delete_sheets_requests(self, sheets_in_conf):
         """
@@ -167,13 +176,13 @@ class Spreadsheet:
         Returns:
             list: List of delete-sheet requests.
         """
-        del_sheets_reqs = []
+        del_sheet_reqs = []
 
-        for sheet_name, sheet in self.sheets.items():
-            if sheet_name not in sheets_in_conf:
-                del_sheets_reqs.append(sheet.delete_request)
+        for name, sheet in self.sheets.items():
+            if name not in sheets_in_conf:
+                del_sheet_reqs.append(sheet.delete_request)
 
-        return del_sheets_reqs
+        return del_sheet_reqs
 
     def _create(self):
         """Create new spreadsheet according to config.
