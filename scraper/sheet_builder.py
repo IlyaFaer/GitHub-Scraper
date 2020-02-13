@@ -47,7 +47,8 @@ class SheetBuilder:
                 Index of issues in format:
                 {(issue.number, repo_short_name): github.Issue.Issue}
         """
-        issue_index = {}
+        is_first_update = False
+        updated_issues = {}
         repo_names = list(self._repo_names.keys()) + list(self._in_repo_names.keys())
 
         for repo_name in repo_names:
@@ -57,20 +58,34 @@ class SheetBuilder:
             self._index_closed_prs(repo)
 
             # process issues from the repo
-            for issue in repo.get_issues(**self._build_filter(repo_name)):
+            issues = repo.get_issues(**self._build_filter(repo_name))
+            logging.info("{repo}: processing issues".format(repo=repo.full_name))
+
+            for index, issue in enumerate(issues):
+                if repo_name not in self._last_issue_updates.keys():
+                    self._last_issue_updates[repo_name] = datetime.datetime(1, 1, 1)
+                    is_first_update = True
+
                 id_ = self._build_issues_id(issue, repo)
                 if id_:
-                    issue_index[id_] = issue
+                    updated_issues[id_] = issue
 
-                last_issue_update = self._last_issue_updates.setdefault(
-                    repo_name, datetime.datetime(1, 1, 1)
-                )
                 self._last_issue_updates[repo_name] = max(
-                    last_issue_update, issue.updated_at
+                    self._last_issue_updates[repo_name], issue.updated_at
                 )
 
-        self._issues_index.update(issue_index)
-        return issue_index
+                if is_first_update and issues.totalCount > 1600:
+                    if (index + 1) % 400 == 0:
+                        logging.info(
+                            "processed {num} of {total} issues".format(
+                                num=index + 1, total=issues.totalCount
+                            )
+                        )
+
+            logging.info("{repo}: issues processed".format(repo=repo.full_name))
+
+        self._issues_index.update(updated_issues)
+        return updated_issues
 
     def get_from_index(self, tracked_id):
         """Get issue object saved in internal index.
@@ -209,8 +224,8 @@ class SheetBuilder:
                 for key_phrase in key_phrases:
                     self.prs_index.add(repo, self._get_repo_lts(repo), pull, key_phrase)
 
-                if is_first_update and pulls.totalCount > 800:
-                    if (index + 1) % 200 == 0:
+                if is_first_update and pulls.totalCount > 1600:
+                    if (index + 1) % 400 == 0:
                         logging.info(
                             "processed {num} of {total} pull requests".format(
                                 num=index + 1, total=pulls.totalCount
