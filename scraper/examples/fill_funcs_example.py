@@ -19,9 +19,9 @@ sheet_name (str): Name of target sheet.
 
 sheet_config (dict): Sheet configurations from config.py.
 
-prs (dict): Lists of related internal and public
-pull requests (designated by GitHub keywords).
-Pull requests are sorted by creation date (DESC).
+prs (list): Lists of related pull requests (designated by
+GitHub keywords). Pull requests are sorted by creation
+date (DESC).
 
 is_new (bool): New issue in table.
 """
@@ -137,23 +137,10 @@ def fill_project(old_issue, issue, sheet_name, sheet_config, prs, is_new):
 
 def fill_ppr(old_issue, issue, sheet_name, sheet_config, prs, is_new):
     """'Public PR' column filling."""
-    if prs["public"]:
-        last_pr = prs["public"][0]
-
-        old_issue["Public PR"] = build_url_formula(last_pr)
+    if prs:
+        old_issue["Public PR"] = build_url_formula(prs[0])
         old_issue.colors["Public PR"] = designate_status_color(
-            last_pr, sheet_config["columns"][7]["values"]
-        )
-
-
-def fill_ipr(old_issue, issue, sheet_name, sheet_config, prs, is_new):
-    """'Internal PR' column filling."""
-    if prs["internal"]:
-        last_pr = prs["internal"][0]
-
-        old_issue["Internal PR"] = build_url_formula(last_pr)
-        old_issue.colors["Internal PR"] = designate_status_color(
-            last_pr, sheet_config["columns"][7]["values"]
+            prs[0], sheet_config["columns"][7]["values"]
         )
 
 
@@ -174,9 +161,9 @@ def to_be_deleted(row, issue, prs):
         row (Row): Dict-like object, which represents
             row, retrieved from a spreadsheet.
         issue (github.Issue.Issue): Issue object, read from GitHub.
-        prs (dict): Lists of related internal and public
-            pull requests (designated by GitHub keywords).
-            Pull requests are sorted by creation date (DESC).
+        prs (list): List of related pull requests (designated
+            by GitHub keywords). Pull requests are sorted by
+            creation date (DESC).
 
     Returns:
         bool:

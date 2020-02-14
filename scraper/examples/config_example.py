@@ -6,7 +6,6 @@ This is a configurations example. Create and tweak your
 own config.py (see TODO). Your config.py will not be Git-tracked.
 """
 import copy
-from utils import get_num_from_formula
 import fill_funcs
 import const
 
@@ -79,12 +78,6 @@ COLUMNS = [
     {"name": "Project", "align": "CENTER", "fill_func": fill_funcs.fill_project},
     {"name": "Assignee", "align": "CENTER", "fill_func": fill_funcs.fill_assignee},
     {
-        "name": "Internal PR",
-        "align": "CENTER",
-        "type": "link",
-        "fill_func": fill_funcs.fill_ipr,
-    },
-    {
         "name": "Public PR",
         "align": "CENTER",
         "type": "link",
@@ -113,21 +106,20 @@ TEAMS = {
         "vishald123",
         "AVaksman",
         "IvanAvanessov",
-        "fazunenko",
+        "dmitry-fa",
         "Other",
         "N/A",
     ],
     "Golang": ["IlyaFaer", "AlisskaPie", "Other", "N/A"],
     "PHP": ["andrewinc", "ava12", "Other", "N/A"],
-    "Java": ["athakor", "pmakani", "rahulKQL", "fazunenko", "Other", "N/A"],
+    "Java": ["athakor", "pmakani", "rahulKQL", "dmitry-fa", "Other", "N/A"],
 }
 
-# we don't review code internally in Go
-GO_COLUMNS = copy.copy(COLUMNS)
-GO_COLUMNS[7]["values"] = TEAMS["Golang"]
-GO_COLUMNS.pop(8)
 
 # set teams into column settings (every sheet has it's own team)
+GO_COLUMNS = copy.copy(COLUMNS)
+GO_COLUMNS[7]["values"] = TEAMS["Golang"]
+
 PY_COLUMNS = copy.deepcopy(COLUMNS)
 PY_COLUMNS[7]["values"] = TEAMS["Python"]
 
@@ -146,12 +138,49 @@ SHEETS = {
     "Python": {  # sheet name
         "labels": projects_labels,  # meaningful labels
         "repo_names": {  # repos to track on this sheet
-            "googleapis/google-cloud-python": "GCP",
+            # every key will be used with prefix: github.com/
+            "googleapis/python-logging": "Logging",
+            "googleapis/python-dataproc": "Dataproc",
+            "googleapis/python-datastore": "Datastore",
+            "googleapis/python-bigquery-storage": "BQ Storage",
+            "googleapis/python-bigquery-datatransfer": "BQ Datatransfer",
+            "googleapis/python-pubsub": "Pub/Sub",
+            "googleapis/python-recommender": "Recommender",
+            "googleapis/python-resource-manager": "Resource Manager",
+            "googleapis/python-texttospeech": "Text To Speech",
+            "googleapis/python-translate": "Translate",
+            "googleapis/python-vision": "Vision",
+            "googleapis/python-speech": "Speech",
+            "googleapis/python-bigquery": "BigQuery",
+            "googleapis/python-runtimeconfig": "Runtime Config",
+            "googleapis/python-scheduler": "Scheduler",
+            "googleapis/python-securitycenter": "Security Center",
+            "googleapis/python-tasks": "Tasks",
+            "googleapis/python-billingbudgets": "Billing Budgets",
+            "googleapis/python-videointelligence": "Video Intelligence",
+            "googleapis/python-ndb": "NDB",
+            "googleapis/python-trace": "Trace",
+            "googleapis/python-talent": "Talent",
+            "googleapis/python-iam": "IAM",
+            "googleapis/python-redis": "Redis",
+            "googleapis/python-firestore": "Firestore",
+            "googleapis/python-container": "Container",
+            "googleapis/python-dlp": "DLP",
+            "googleapis/python-documentai": "Document AI",
+            "googleapis/python-storage": "Storage",
+            "googleapis/python-dns": "DNS",
+            "googleapis/python-spanner": "Spanner",
+            "googleapis/python-datalabeling": "Data Labeling",
+            "googleapis/python-containeranalysis": "Container Analysis",
+            "googleapis/python-datacatalog": "Data Catalog",
+            "googleapis/python-cloudbuild": "Cloud Build",
+            "googleapis/python-bigtable": "BigTable",
+            "googleapis/python-automl": "Auto ML",
+            "googleapis/python-webrisk": "Webrisk",
+            "googleapis/python-websecurityscanner": "Security Scanner",
+            "googleapis/python-api-core": "API Core",
+            "googleapis/python-secret-manager": "Secret Manager",
             "googleapis/google-resumable-media-python": "GRMP",
-        },
-        "internal_repo_names": {
-            "q-logic/google-cloud-python": "GCP",
-            "q-logic/google-resumable-media-python": "GRMP",
         },
         # columns configurations for this sheet
         "columns": PY_COLUMNS,
@@ -182,7 +211,6 @@ SHEETS = {
     "PHP": {
         "labels": projects_labels,
         "repo_names": {"googleapis/google-cloud-php": "GCPHP"},
-        "internal_repo_names": {"q-logic/google-cloud-php": "GCPHP"},
         "columns": PHP_COLUMNS,
     },
     "Java": {
@@ -255,16 +283,6 @@ SHEETS = {
             "googleapis/api-compiler": "API Compiler",
             "googleapis/common-protos-java": "Common Protos",
         },
-        "internal_repo_names": {},
         "columns": JAVA_COLUMNS,
     },
 }
-
-
-def sort_func(row):
-    """Sorts data within single one sheet.
-
-    Args:
-        row (dict): Dict representation of a single row.
-    """
-    return row["Repository"], row["Project"], int(get_num_from_formula(row["Issue"]))

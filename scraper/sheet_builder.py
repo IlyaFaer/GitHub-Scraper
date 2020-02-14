@@ -20,7 +20,6 @@ class SheetBuilder:
     def __init__(self):
         self._repos = {}  # repos tracked by this builder
         self._repo_names = {}
-        self._in_repo_names = {}
         self._repo_names_inverse = {}
         # time when any PR was last updated in every repo
         self._last_pr_updates = {}
@@ -49,9 +48,8 @@ class SheetBuilder:
         """
         is_first_update = False
         updated_issues = {}
-        repo_names = list(self._repo_names.keys()) + list(self._in_repo_names.keys())
 
-        for repo_name in repo_names:
+        for repo_name in self._repo_names.keys():
             repo = self._repos.setdefault(
                 repo_name, self._gh_client.get_repo(repo_name)
             )
@@ -132,21 +130,18 @@ class SheetBuilder:
             config (dict): Dict with sheet's configurations.
         """
         self._repo_names = config["repo_names"]
-        self._in_repo_names = config.get("internal_repo_names", {})
-
-        self.prs_index.reload_config(self._in_repo_names)
         self._repo_names_inverse = dict((v, k) for k, v in self._repo_names.items())
 
     def get_related_prs(self, issue_id):
-        """Return internal and public pull requests of specified issue.
+        """Return pull requests of the specified issue.
 
         Args:
             issue_id (tuple): Issue number and repo short name.
 
         Returns:
-            dict:
-                All of the internal and public pull requests
-                related to the specified issue.
+            list:
+                All of the pull requests related to the
+                specified issue.
         """
         return self.prs_index.get_related_prs(issue_id)
 
@@ -172,22 +167,6 @@ class SheetBuilder:
                 "state": "all",
             }
         return args
-
-    def _get_repo_lts(self, repo):
-        """Get repo short name.
-
-        Args:
-            repo (github.Repository.Repository):
-                Repository object.
-
-        Returns:
-            str: Repository short name.
-        """
-        repo_lts = self._repo_names.get(repo.full_name)
-        if repo_lts is None:
-            repo_lts = self._in_repo_names.get(repo.full_name)
-
-        return repo_lts
 
     def _login_on_github(self):
         """Authenticate on GitHub."""
@@ -222,7 +201,9 @@ class SheetBuilder:
 
                 key_phrases = self._try_match_keywords(pull.body)
                 for key_phrase in key_phrases:
-                    self.prs_index.add(repo, self._get_repo_lts(repo), pull, key_phrase)
+                    self.prs_index.add(
+                        self._repo_names.get(repo.full_name), pull, key_phrase
+                    )
 
                 if is_first_update and pulls.totalCount > 1600:
                     if (index + 1) % 400 == 0:
@@ -249,7 +230,7 @@ class SheetBuilder:
             tuple: issue's number and repo short name.
         """
         id_ = ()
-        repo_lts = self._get_repo_lts(repo)
+        repo_lts = self._repo_names.get(repo.full_name)
 
         if issue.pull_request is None:
             id_ = (str(issue.number), repo_lts)
@@ -257,7 +238,7 @@ class SheetBuilder:
             # add PR into index
             key_phrases = self._try_match_keywords(issue.body)
             for key_phrase in key_phrases:
-                self.prs_index.add(repo, repo_lts, issue.as_pull_request(), key_phrase)
+                self.prs_index.add(repo_lts, issue.as_pull_request(), key_phrase)
         return id_
 
     def _try_match_keywords(self, body):
