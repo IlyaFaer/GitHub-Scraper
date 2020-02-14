@@ -34,7 +34,7 @@ Scraper uses *config.py* as a source of preferences. Before update it reloads *c
 At the specified intervals Scraper requests issues/PRs lists from GitHub. If new issues were created, Scraper will add them into the table with *Priority* 'New'. If some issues have been closed, Scraper will make their number grey.  
 
 **PR autodetection**  
-To make Scraper detect PRs, use GitHub keywords "Towards", "Closes", "Fixes" in public PRs and "IPR" in internals to make link from PR's body to original issue. Scrapper will use these links to fill "Public PR" and "Internal PR" fields in related issues.  
+To make Scraper detect PRs, use GitHub keywords "Towards", "Closes", "Fixes" to make link from PRs body to original issue. Scrapper will use these links to fill "Public PR" field in the related issues.  
 
 **PR color**  
 PR number may be colored. Colors have their meaning:  
