@@ -28,13 +28,13 @@ Scraper uses *config.py* as a source of preferences. Before update it reloads *c
 * UPDATE_PERIODICITY - duration of a pause between updates in seconds
 * SHEETS - spreadsheet preferences: list of sheets with their names, meaningful labels, lists of corresponding repositories and team lists
 * COLUMNS - column names, style, data validation (with corresponding colors for some values) and filling functions
-* sort_func - function for sorting issues within sheet  
+* fill_funcs.sort_func - function for sorting issues within sheet  
 
 **Updating**  
-At the specified intervals Scraper requests issues/PRs lists from GitHub. If new issues were created, Scraper will add them into the table with *Priority* 'New'. If some issues have been closed, Scraper will make their number grey.  
+At the specified intervals Scraper requests issues and PRs from GitHub. If new issues were created, Scraper will add them into the table with *Priority* 'New'. If some issues have been closed, Scraper will make their number grey.  
 
 **PR autodetection**  
-To make Scraper detect PRs, use GitHub keywords "Towards", "Closes", "Fixes" to make link from PRs body to original issue. Scrapper will use these links to fill "Public PR" field in the related issues.  
+To make Scraper detect PRs, use GitHub keywords "Towards", "Closes", "Fixes" to make link from PRs body to the original issue. Scrapper will use these links to fill "Public PR" field in the related issues.  
 
 **PR color**  
 PR number may be colored. Colors have their meaning:  
