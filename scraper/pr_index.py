@@ -3,6 +3,7 @@ Module which contains functions for PR processing
 and indexating.
 """
 import datetime
+import logging
 from utils import try_match_keywords
 
 
@@ -44,19 +45,34 @@ class PullRequestsIndex(dict):
                 Repository object.
             repo (str): Repo short name.
         """
+        is_first_update = False
         pulls = repo.get_pulls(state="closed", sort="updated", direction="desc")
+
         if pulls.totalCount:
-            for pull in pulls:
-                if pull.updated_at < self._last_pr_updates.setdefault(
-                    repo.full_name, datetime.datetime(1, 1, 1)
-                ):
+            logging.info("{repo}: indexing pull requests".format(repo=repo.full_name))
+            for index, pull in enumerate(pulls):
+                if repo.full_name not in self._last_pr_updates.keys():
+                    self._last_pr_updates[repo.full_name] = datetime.datetime(1, 1, 1)
+                    is_first_update = True
+
+                if pull.updated_at < self._last_pr_updates[repo.full_name]:
                     break
 
                 key_phrases = try_match_keywords(pull.body)
                 for key_phrase in key_phrases:
                     self.add(repo_lts, pull, key_phrase)
 
+                if is_first_update and pulls.totalCount > 1600:
+                    if (index + 1) % 400 == 0:
+                        logging.info(
+                            "processed {num} of {total} pull requests".format(
+                                num=index + 1, total=pulls.totalCount
+                            )
+                        )
             self._last_pr_updates[repo.full_name] = pulls[0].updated_at
+            logging.info(
+                "{repo}: all pull requests indexed".format(repo=repo.full_name)
+            )
 
     def add(self, repo_lts, lpr, key_exp):
         """Add PR object into index or update it."""

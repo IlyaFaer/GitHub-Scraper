@@ -21,17 +21,14 @@ class SheetBuilder:
         self._repos = {}  # repos tracked by this builder
         self._repo_names = {}
         self._repo_names_inverse = {}
-        # time when any PR was last updated in every repo
-        self._last_pr_updates = {}
         # time when any issue was last updated in every repo
         self._last_issue_updates = {}
         self.prs_index = PullRequestsIndex()
         # dict in which we aggregate all of the issue objects
         # used to avoid re-reading unupdated issues from GitHub
         self._issues_index = {}
-        self._gh_client = None  # GitHub client object
+        self._gh_client = self._login_on_github()
         self.first_update = True
-        self._login_on_github()
 
     def retrieve_updated(self):
         """Build list of issues/PRs from the given repositories.
@@ -53,7 +50,7 @@ class SheetBuilder:
             repo = self._repos.setdefault(
                 repo_name, self._gh_client.get_repo(repo_name)
             )
-            self._index_closed_prs(repo)
+            self.prs_index.index_closed_prs(repo, self._repo_names.get(repo.full_name))
 
             # process issues from the repo
             issues = repo.get_issues(**self._build_filter(repo_name))
@@ -173,50 +170,7 @@ class SheetBuilder:
         with open("loginpas.txt") as login_file:
             login, password = login_file.read().strip().split("/")
 
-        self._gh_client = Github(login, password)
-
-    def _index_closed_prs(self, repo):
-        """Add closed pull requests into PRs index.
-
-        Method remembers last PR's update time and doesn't
-        indexate PRs which weren't updated since last
-        spreadsheet update.
-
-        Args:
-            repo (github.Repository.Repository):
-                Repository object.
-        """
-        is_first_update = False
-        pulls = repo.get_pulls(state="closed", sort="updated", direction="desc")
-
-        if pulls.totalCount:
-            logging.info("{repo}: indexing pull requests".format(repo=repo.full_name))
-            for index, pull in enumerate(pulls):
-                if repo.full_name not in self._last_pr_updates.keys():
-                    self._last_pr_updates[repo.full_name] = datetime.datetime(1, 1, 1)
-                    is_first_update = True
-
-                if pull.updated_at < self._last_pr_updates[repo.full_name]:
-                    break
-
-                key_phrases = self._try_match_keywords(pull.body)
-                for key_phrase in key_phrases:
-                    self.prs_index.add(
-                        self._repo_names.get(repo.full_name), pull, key_phrase
-                    )
-
-                if is_first_update and pulls.totalCount > 1600:
-                    if (index + 1) % 400 == 0:
-                        logging.info(
-                            "processed {num} of {total} pull requests".format(
-                                num=index + 1, total=pulls.totalCount
-                            )
-                        )
-
-            self._last_pr_updates[repo.full_name] = pulls[0].updated_at
-            logging.info(
-                "{repo}: all pull requests indexed".format(repo=repo.full_name)
-            )
+        return Github(login, password)
 
     def _build_issues_id(self, issue, repo):
         """Designate issue's id. If issue is PR, index it.
