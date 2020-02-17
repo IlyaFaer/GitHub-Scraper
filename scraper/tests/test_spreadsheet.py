@@ -22,6 +22,7 @@ class ConfigMock:
     def __init__(self):
         self.SHEETS = {"sheet1": {"repo_names": {}}, "sheet2": {}}
         self.TITLE = "MockTitle"
+        self.__file__ = 0
 
 
 class SpreadsheetMock(spreadsheet.Spreadsheet):
@@ -35,7 +36,9 @@ class SpreadsheetMock(spreadsheet.Spreadsheet):
         self._columns = []
         self._config = config
         self._id = SPREADSHEET_ID
+        self._last_config_update = -1
         self._ss_resource = None
+        self._config_updated = True
 
 
 CONFIG = ConfigMock()
@@ -48,6 +51,16 @@ class TestSpreadsheet(unittest.TestCase):
     def setUpClass(self):
         """Init mock for spreadsheet."""
         self._ss_mock = SpreadsheetMock(CONFIG)
+
+    def _prepare_batch_mock(self):
+        """Prepare chain of mocks for batchUpdate() call.
+
+        Returns:
+            mock.Mock: Mock for batchUpdate().
+        """
+        execute_mock = mock.Mock()
+        batch_mock = mock.Mock(return_value=mock.Mock(execute=execute_mock))
+        return mock.Mock(batchUpdate=batch_mock)
 
     def test_init_create(self):
         """Init Spreadsheet object with mew spreadsheet creation."""
@@ -77,9 +90,7 @@ class TestSpreadsheet(unittest.TestCase):
         SS_RESOURCE = "SS_RESOURCE"
         SHEETS = "SHEETS"
 
-        execute_mock = mock.Mock()
-        batch_mock = mock.Mock(return_value=mock.Mock(execute=execute_mock))
-        self._ss_mock._ss_resource = mock.Mock(batchUpdate=batch_mock)
+        self._ss_mock._ss_resource = self._prepare_batch_mock()
 
         with mock.patch("auth.authenticate", return_value=SS_RESOURCE) as auth_mock:
             with mock.patch(
@@ -107,6 +118,21 @@ class TestSpreadsheet(unittest.TestCase):
 
     def test_update_structure_no_update(self):
         """
+        Test spreadsheet structure updating in case if
+        configurations were not changed since last update.
+        """
+        batch_mock = self._prepare_batch_mock()
+        self._ss_mock._ss_resource = batch_mock
+        self._ss_mock._config_updated = False
+
+        with mock.patch("spreadsheet.Spreadsheet._actualize_sheets") as actual_mock:
+            self._ss_mock.update_structure()
+            actual_mock.assert_not_called()
+
+        batch_mock.assert_not_called()
+
+    def test_update_structure_no_sheets_changes(self):
+        """
         Test spreadsheet structure updating without
         sheet creation and deletion.
         """
@@ -117,9 +143,9 @@ class TestSpreadsheet(unittest.TestCase):
             }
         }
 
-        execute_mock = mock.Mock()
-        batch_mock = mock.Mock(return_value=mock.Mock(execute=execute_mock))
+        batch_mock = self._prepare_batch_mock()
         self._ss_mock._ss_resource = mock.Mock(batchUpdate=batch_mock)
+        self._ss_mock._config_updated = True
 
         with mock.patch("spreadsheet.Spreadsheet._actualize_sheets") as actual_mock:
             self._ss_mock.update_structure()
@@ -156,8 +182,8 @@ class TestSpreadsheet(unittest.TestCase):
             "sheet2": Sheet("sheet2", SPREADSHEET_ID, 123),
             "sheet3": Sheet("sheet3", SPREADSHEET_ID, SHEET3_ID),
         }
-        execute_mock = mock.Mock()
-        batch_mock = mock.Mock(return_value=mock.Mock(execute=execute_mock))
+
+        batch_mock = self._prepare_batch_mock()
         ss_mock._ss_resource = mock.Mock(batchUpdate=batch_mock)
 
         with mock.patch("spreadsheet.Spreadsheet._actualize_sheets") as actual_mock:
@@ -195,8 +221,17 @@ class TestSpreadsheet(unittest.TestCase):
             "sheet2": Sheet("sheet2", SPREADSHEET_ID),
         }
 
-        self._ss_mock.reload_config(new_config)
-        self.assertEqual(self._ss_mock._config, new_config)
+        # check if all sheets configurations were reloaded
+        with mock.patch("sheet.Sheet.reload_config") as sheet_reload_mock:
+            self._ss_mock.reload_config(new_config)
+
+            self.assertEqual(self._ss_mock._config, new_config)
+            sheet_reload_mock.assert_has_calls((mock.call({}), mock.call({})))
+
+        # check if configurations were not reloaded
+        with mock.patch("sheet.Sheet.reload_config") as sheet_reload_mock:
+            self._ss_mock.reload_config(new_config)
+            sheet_reload_mock.assert_not_called()
 
     def test_init_sheets(self):
         SHEET1 = "sheet1"

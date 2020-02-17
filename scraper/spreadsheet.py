@@ -1,5 +1,6 @@
 """API which controls Google Spreadsheet."""
 import logging
+import os.path
 import auth
 from sheet import Sheet
 
@@ -31,6 +32,8 @@ class Spreadsheet:
         self._config = config
         self._ss_resource = auth.authenticate()
         self._id = id_ or self._create()
+        self._last_config_update = 0
+        self._config_updated = False
         self.sheets = self._init_sheets()
 
     @property
@@ -52,6 +55,8 @@ class Spreadsheet:
         changed. Add new sheets into the spreadsheet, delete
         sheets deleted from the configurations.
         """
+        if not self._config_updated:
+            return
         try:
             logging.info("Updating spreadsheet {id_} structure".format(id_=self._id))
             # spreadsheet rename request
@@ -99,9 +104,16 @@ class Spreadsheet:
             config (module):
                 Imported config.py module with preferences.
         """
-        self._config = config
-        for sheet_name, sheet in self.sheets.items():
-            sheet.reload_config(self._config.SHEETS[sheet_name])
+        config_update = os.path.getmtime(config.__file__)
+        self._config_updated = config_update != self._last_config_update
+
+        if self._config_updated:
+            self._config = config
+            for sheet_name, sheet in self.sheets.items():
+                if sheet_name in self._config.SHEETS:
+                    sheet.reload_config(self._config.SHEETS[sheet_name])
+
+            self._last_config_update = config_update
 
     def _init_sheets(self):
         """Init Sheet object for every sheet in this spreadsheet.
