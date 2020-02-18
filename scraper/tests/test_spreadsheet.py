@@ -155,6 +155,18 @@ class TestSpreadsheet(unittest.TestCase):
             body={"requests": [RENAME_REQUEST]}, spreadsheetId="ss_id"
         )
 
+    def test_update_structure_force(self):
+        """Test force spreadsheet structure updating."""
+        batch_mock = self._prepare_batch_mock()
+        self._ss_mock._ss_resource = mock.Mock(batchUpdate=batch_mock)
+        self._ss_mock._config_updated = False
+
+        with mock.patch("spreadsheet.Spreadsheet._actualize_sheets") as actual_mock:
+            self._ss_mock.update_structure(force=True)
+            actual_mock.assert_not_called()
+
+        batch_mock.assert_called_once()
+
     def test_update_structure(self):
         """
         Test spreadsheet structure updating.

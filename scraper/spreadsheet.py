@@ -48,14 +48,19 @@ class Spreadsheet:
             "Spreadsheet id can't be changed. Initiate another Spreadsheet() object."
         )
 
-    def update_structure(self):
+    def update_structure(self, force=False):
         """Update spreadsheet structure.
 
         Rename the spreadsheet, if name in `config` has been
         changed. Add new sheets into the spreadsheet, delete
         sheets deleted from the configurations.
+
+        Args:
+            force (bool):
+                If True, structure will be updated whether
+                configuration updated or not.
         """
-        if not self._config_updated:
+        if not (self._config_updated or force):
             return
         try:
             logging.info("Updating spreadsheet {id_} structure".format(id_=self._id))
