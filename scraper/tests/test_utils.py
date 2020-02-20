@@ -45,3 +45,10 @@ class TestUtilFunctions(unittest.TestCase):
             formula,
             """=HYPERLINK("https://github.com/org_name/repo_name/issues/123";"123")""",
         )
+
+    def test_match_keywords(self):
+        """Check matching the GitHub keywords."""
+        self.assertEqual(utils.try_match_keywords(""), [])
+
+        result = utils.try_match_keywords("Some text. Closes #135")
+        self.assertEqual(result, ["Closes #135"])

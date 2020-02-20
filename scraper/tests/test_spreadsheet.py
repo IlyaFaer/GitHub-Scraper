@@ -9,36 +9,12 @@ import examples.config_example  # noqa: E402
 sys.modules["config"] = examples.config_example
 
 import spreadsheet  # noqa: E402
-from sheet import Sheet  # noqa: E402
 import unittest  # noqa: E402
 import unittest.mock as mock  # noqa: E402
+from mocks import ConfigMock, SpreadsheetMock, SheetMock, SheetBuilderMock  # noqa: E402
+import github
 
 SPREADSHEET_ID = "ss_id"
-
-
-class ConfigMock:
-    """Hand-written mock for config module."""
-
-    def __init__(self):
-        self.SHEETS = {"sheet1": {"repo_names": {}}, "sheet2": {}}
-        self.TITLE = "MockTitle"
-        self.__file__ = 0
-
-
-class SpreadsheetMock(spreadsheet.Spreadsheet):
-    """Hand-written mock for Spreadsheet objects.
-
-    Overrides some methods to exclude backend calls.
-    """
-
-    def __init__(self, config, id_=None):
-        self._builders = {}
-        self._columns = []
-        self._config = config
-        self._id = SPREADSHEET_ID
-        self._last_config_update = -1
-        self._ss_resource = None
-        self._config_updated = True
 
 
 CONFIG = ConfigMock()
@@ -191,14 +167,18 @@ class TestSpreadsheet(unittest.TestCase):
 
         ss_mock = SpreadsheetMock(CONFIG, "test_id")
         ss_mock.sheets = {
-            "sheet2": Sheet("sheet2", SPREADSHEET_ID, 123),
-            "sheet3": Sheet("sheet3", SPREADSHEET_ID, SHEET3_ID),
+            "sheet2": SheetMock("sheet2", SPREADSHEET_ID, 123),
+            "sheet3": SheetMock("sheet3", SPREADSHEET_ID, SHEET3_ID),
         }
 
         batch_mock = self._prepare_batch_mock()
         ss_mock._ss_resource = mock.Mock(batchUpdate=batch_mock)
+        ss_mock._config_updated = True
 
-        with mock.patch("spreadsheet.Spreadsheet._actualize_sheets") as actual_mock:
+        actual_mock = ss_mock._actualize_sheets = mock.Mock()
+        with mock.patch(
+            "sheet_builder.SheetBuilder._login_on_github", return_value=github.Github
+        ):
             ss_mock.update_structure()
             actual_mock.assert_called_once()
 
@@ -210,8 +190,8 @@ class TestSpreadsheet(unittest.TestCase):
     def test_update_all_sheets(self):
         """Update sheets one by one."""
         ss_mock = SpreadsheetMock(CONFIG)
-        sheet1 = Sheet("sheet1", SPREADSHEET_ID)
-        sheet2 = Sheet("sheet2", SPREADSHEET_ID)
+        sheet1 = SheetMock("sheet1", SPREADSHEET_ID)
+        sheet2 = SheetMock("sheet2", SPREADSHEET_ID)
 
         ss_mock.sheets = {"sheet1": sheet1, "sheet2": sheet2}
         with mock.patch("sheet.Sheet.update") as update_sheet:
@@ -229,8 +209,8 @@ class TestSpreadsheet(unittest.TestCase):
         new_config.SHEETS = NEW_SHEETS
 
         self._ss_mock.sheets = {
-            "sheet1": Sheet("sheet1", SPREADSHEET_ID),
-            "sheet2": Sheet("sheet2", SPREADSHEET_ID),
+            "sheet1": SheetMock("sheet1", SPREADSHEET_ID),
+            "sheet2": SheetMock("sheet2", SPREADSHEET_ID),
         }
 
         # check if all sheets configurations were reloaded
@@ -264,7 +244,8 @@ class TestSpreadsheet(unittest.TestCase):
         ss_mock = SpreadsheetMock(CONFIG)
         ss_mock._ss_resource = mock.Mock(get=get_mock)
 
-        sheets = ss_mock._init_sheets()
+        with mock.patch("sheet_builder.SheetBuilder", return_value=SheetBuilderMock):
+            sheets = ss_mock._init_sheets()
         self.assertEqual(sheets[SHEET1].id, SHEET1_ID)
         self.assertEqual(sheets[SHEET1].name, SHEET1)
 
@@ -278,8 +259,8 @@ class TestSpreadsheet(unittest.TestCase):
 
         ss_mock = SpreadsheetMock(CONFIG)
         ss_mock.sheets = {
-            SHEET1: Sheet(SHEET1, SPREADSHEET_ID),
-            SHEET2: Sheet(SHEET2, SPREADSHEET_ID),
+            SHEET1: SheetMock(SHEET1, SPREADSHEET_ID),
+            SHEET2: SheetMock(SHEET2, SPREADSHEET_ID),
         }
 
         execute_mock = mock.Mock(
@@ -297,9 +278,10 @@ class TestSpreadsheet(unittest.TestCase):
     def test_new_sheets_requests(self):
         """Check if add-new-sheet requests are built fine."""
         SHEETS_IN_CONF = ("sheet_1", "sheet_2")
-        self._ss_mock.sheets = {"sheet_1": Sheet("sheet_1", SPREADSHEET_ID)}
+        self._ss_mock.sheets = {"sheet_1": SheetMock("sheet_1", SPREADSHEET_ID)}
 
-        reqs = self._ss_mock._build_new_sheets_requests(SHEETS_IN_CONF)
+        with mock.patch("sheet_builder.SheetBuilder", return_value=SheetBuilderMock):
+            reqs = self._ss_mock._build_new_sheets_requests(SHEETS_IN_CONF)
         self.assertEqual(len(reqs), 1)
         self.assertEqual(reqs[0]["addSheet"]["properties"]["title"], "sheet_2")
 
@@ -308,8 +290,8 @@ class TestSpreadsheet(unittest.TestCase):
         FIRST_SHEET_ID = 123
         SHEETS_IN_CONF = ("sheet_2",)
         self._ss_mock.sheets = {
-            "sheet_1": Sheet("sheet_1", SPREADSHEET_ID, FIRST_SHEET_ID),
-            "sheet_2": Sheet("sheet_2", SPREADSHEET_ID),
+            "sheet_1": SheetMock("sheet_1", SPREADSHEET_ID, FIRST_SHEET_ID),
+            "sheet_2": SheetMock("sheet_2", SPREADSHEET_ID),
         }
 
         reqs = self._ss_mock._build_delete_sheets_requests(SHEETS_IN_CONF)

@@ -1,5 +1,5 @@
 """Some utils for tracker."""
-from const import NUM_REGEX, PATTERNS, YELLOW_RAPS, PINK, PURPLE
+from const import NUM_REGEX, PATTERNS
 
 
 class BatchIterator:
@@ -74,22 +74,3 @@ def try_match_keywords(body):
         for pattern in PATTERNS:
             result += pattern.findall(body)
     return result
-
-
-def designate_status_color(pull, team):
-    """Check PR's status and return corresponding color.
-
-    Args:
-        pull (github.PullRequest.PullRequest):
-            Pull request object.
-    """
-    status = None
-
-    if pull.merged:
-        status = PURPLE
-    elif pull.state == "closed" and not pull.merged:
-        status = PINK
-    elif pull.user.login not in team:
-        status = YELLOW_RAPS
-
-    return status

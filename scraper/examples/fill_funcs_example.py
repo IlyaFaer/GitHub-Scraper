@@ -26,8 +26,8 @@ date (DESC).
 is_new (bool): New issue in table.
 """
 import datetime
-from const import GREY
-from utils import build_url_formula, designate_status_color, get_num_from_formula
+from const import GREY, PINK, YELLOW_RAPS, PURPLE
+from utils import build_url_formula, get_num_from_formula
 
 
 def fill_priority(old_issue, issue, sheet_name, sheet_config, prs, is_new):
@@ -139,7 +139,7 @@ def fill_ppr(old_issue, issue, sheet_name, sheet_config, prs, is_new):
     """'Public PR' column filling."""
     if prs:
         old_issue["Public PR"] = build_url_formula(prs[0])
-        old_issue.colors["Public PR"] = designate_status_color(
+        old_issue.colors["Public PR"] = _designate_status_color(
             prs[0], sheet_config["columns"][7]["values"]
         )
 
@@ -182,3 +182,25 @@ def sort_func(row):
         row (dict): Dict representation of a single row.
     """
     return row["Repository"], row["Project"], int(get_num_from_formula(row["Issue"]))
+
+
+def _designate_status_color(pull, team):
+    """Check PR's status and return corresponding color.
+
+    Args:
+        pull (github.PullRequest.PullRequest):
+            Pull request object.
+
+    Returns:
+        dict: Color to fill the cell.
+    """
+    color = {"red": 1, "green": 1, "blue": 1}
+
+    if pull.user.login not in team:
+        color = YELLOW_RAPS
+    elif pull.merged:
+        color = PURPLE
+    elif pull.state == "closed" and not pull.merged:
+        color = PINK
+
+    return color

@@ -21,7 +21,7 @@ class Sheet:
         self.name = name
         self.ss_id = spreadsheet_id
         self._config = None
-        self._builder = None
+        self._builder = sheet_builder.SheetBuilder()
 
     @property
     def create_request(self):
@@ -61,11 +61,10 @@ class Sheet:
             config (dict): Sheet configurations.
         """
         self._config = config
+        self._builder.reload_config(config)
 
     def update(self, ss_resource):
         """Update specified sheet with issues/PRs data."""
-        self._prepare_builder()
-
         updated_issues = self._builder.retrieve_updated()
         tracked_issues = self._read(ss_resource)
 
@@ -116,13 +115,6 @@ class Sheet:
         self._clear_bottom(ss_resource, len(tracked_issues), len(self._columns.names))
         self._post_requests(ss_resource, requests)
         self._builder.first_update = False
-
-    def _prepare_builder(self):
-        """Initiate builder for this sheet."""
-        if self._builder is None:
-            self._builder = sheet_builder.SheetBuilder()
-
-        self._builder.reload_config(self._config)
 
     def _insert(self, ss_resource, rows, start_from):
         """Write new data into this sheet.
