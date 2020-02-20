@@ -26,7 +26,7 @@ date (DESC).
 is_new (bool): New issue in table.
 """
 import datetime
-from const import GREY, PINK, YELLOW_RAPS, PURPLE
+from const import GREY, PINK
 from utils import build_url_formula, get_num_from_formula
 
 
@@ -197,9 +197,11 @@ def _designate_status_color(pull, team):
     color = {"red": 1, "green": 1, "blue": 1}
 
     if pull.user.login not in team:
-        color = YELLOW_RAPS
+        # yellow
+        color = {"red": 1, "green": 0.81, "blue": 0.28}
     elif pull.merged:
-        color = PURPLE
+        # purple
+        color = {"red": 0.73, "green": 0.33, "blue": 0.83}
     elif pull.state == "closed" and not pull.merged:
         color = PINK
 

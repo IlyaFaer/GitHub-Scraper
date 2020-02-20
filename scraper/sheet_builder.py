@@ -4,13 +4,13 @@ them into convenient structures.
 """
 import datetime
 import logging
-from const import PATTERNS
 from github import Github
 from pr_index import PullRequestsIndex
+from utils import try_match_keywords
 
 
 class SheetBuilder:
-    """Class that builds table of issues/PRs from specified repos.
+    """Builds table of issues/PRs of the specified repos.
 
     SheetBuilder should be used only for the single one
     specific sheet, meaning all of the repositories set
@@ -52,7 +52,7 @@ class SheetBuilder:
             )
             self.prs_index.index_closed_prs(repo, self._repo_names.get(repo.full_name))
 
-            # process issues from the repo
+            # process issues of the repo
             issues = repo.get_issues(**self._build_filter(repo_name))
             logging.info("{repo}: processing issues".format(repo=repo.full_name))
 
@@ -61,7 +61,7 @@ class SheetBuilder:
                     self._last_issue_updates[repo_name] = datetime.datetime(1, 1, 1)
                     is_first_update = True
 
-                id_ = self._build_issues_id(issue, repo)
+                id_ = self._build_issue_id(issue, repo)
                 if id_:
                     updated_issues[id_] = issue
 
@@ -69,6 +69,7 @@ class SheetBuilder:
                     self._last_issue_updates[repo_name], issue.updated_at
                 )
 
+                # log progress if repo is too big
                 if is_first_update and issues.totalCount > 1600:
                     if (index + 1) % 400 == 0:
                         logging.info(
@@ -143,11 +144,11 @@ class SheetBuilder:
         return self.prs_index.get_related_prs(issue_id)
 
     def _build_filter(self, repo_name):
-        """Build filter for get_issue() method.
+        """Build filter for get_issue() call.
 
         Args:
             repo_name (str):
-                Name of the repo, which issues we're going to requests.
+                Name of the repo, which issues we're going to request.
 
         Returns:
             dict: Filter, ready to be passed into the method.
@@ -172,39 +173,25 @@ class SheetBuilder:
 
         return Github(login, password)
 
-    def _build_issues_id(self, issue, repo):
+    def _build_issue_id(self, issue, repo):
         """Designate issue's id. If issue is PR, index it.
 
         Args:
             issue (github.Issue.Issue): Issue object.
-
             repo (github.Repository.Repository): Repository object.
 
         Returns:
             tuple: issue's number and repo short name.
         """
-        id_ = ()
         repo_lts = self._repo_names.get(repo.full_name)
 
+        # issue is not a pull request
         if issue.pull_request is None:
-            id_ = (str(issue.number), repo_lts)
-        else:
-            # add PR into index
-            key_phrases = self._try_match_keywords(issue.body)
-            for key_phrase in key_phrases:
-                self.prs_index.add(repo_lts, issue.as_pull_request(), key_phrase)
-        return id_
+            return (str(issue.number), repo_lts)
 
-    def _try_match_keywords(self, body):
-        """Try to find keywords in issue's body.
+        # issue is pull request - indexate it
+        key_phrases = try_match_keywords(issue.body)
+        for key_phrase in key_phrases:
+            self.prs_index.add(repo_lts, issue.as_pull_request(), key_phrase)
 
-        Args:
-            body (str): Issue's body.
-
-        Returns: List of key phrases with issue numbers, if found.
-        """
-        result = []
-        if body:
-            for pattern in PATTERNS:
-                result += pattern.findall(body)
-        return result
+        return ()

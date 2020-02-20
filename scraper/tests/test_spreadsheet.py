@@ -12,7 +12,7 @@ import spreadsheet  # noqa: E402
 import unittest  # noqa: E402
 import unittest.mock as mock  # noqa: E402
 from mocks import ConfigMock, SpreadsheetMock, SheetMock, SheetBuilderMock  # noqa: E402
-import github
+import github  # noqa: E402
 
 SPREADSHEET_ID = "ss_id"
 

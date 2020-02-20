@@ -1,4 +1,4 @@
-"""API which controls Google Spreadsheet."""
+"""API to control Google Spreadsheet."""
 import logging
 import os.path
 import auth
@@ -29,11 +29,12 @@ class Spreadsheet:
     """
 
     def __init__(self, config, id_=None):
-        self._config = config
-        self._ss_resource = auth.authenticate()
-        self._id = id_ or self._create()
         self._last_config_update = 0
         self._config_updated = False
+        self._config = config
+
+        self._ss_resource = auth.authenticate()
+        self._id = id_ or self._create()
         self.sheets = self._init_sheets()
 
     @property
@@ -51,8 +52,8 @@ class Spreadsheet:
     def update_structure(self, force=False):
         """Update spreadsheet structure.
 
-        Rename the spreadsheet, if name in `config` has been
-        changed. Add new sheets into the spreadsheet, delete
+        If configurations were changed, rename the spreadsheet,
+        add new sheets into the spreadsheet and delete
         sheets deleted from the configurations.
 
         Args:
@@ -139,12 +140,11 @@ class Spreadsheet:
     def _actualize_sheets(self):
         """Update sheets index of this spreadsheet.
 
-        This method removes Sheet() objects of the sheets which
-        were not found in configurations, and sets ids for
-        the Sheet() objects of newly created sheets.
+        Removes Sheet() objects of the sheets which were not
+        found in configurations, and sets ids for the Sheet()
+        objects of newly created sheets.
         """
         sheets_in_ss = []
-        to_delete = []
 
         resp = self._ss_resource.get(spreadsheetId=self._id).execute()
         # update sheets ids from the real spreadsheet
@@ -155,6 +155,7 @@ class Spreadsheet:
             self.sheets[name].id = props["sheetId"]
             sheets_in_ss.append(name)
 
+        to_delete = []
         # check for Sheet()'s, which are no more in the spreadsheet
         for sheet_name, sheet in self.sheets.items():
             if sheet_name not in sheets_in_ss:
@@ -202,7 +203,7 @@ class Spreadsheet:
         return del_sheet_reqs
 
     def _create(self):
-        """Create new spreadsheet according to config.
+        """Create new spreadsheet according to configurations.
 
         Returns:
             str: The new spreadsheet id.

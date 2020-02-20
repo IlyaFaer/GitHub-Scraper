@@ -11,7 +11,7 @@ import const
 
 
 # {<label name>: <project name>}
-projects_labels = {
+PROJECTS_LABELS = {
     "api: storage": "Storage",
     "api: firestore": "FireStore",
     "api: bigquery": "BigQuery",
@@ -32,9 +32,9 @@ UPDATE_PERIODICITY = 3600  # one hour
 COLUMNS = [
     {
         "name": "Priority",  # column title
-        "width": 80,
         "align": "CENTER",  # text alignment
-        # function which sets a value of a
+        "width": 80,
+        # function to set value of a
         # single one cell in this column
         "fill_func": fill_funcs.fill_priority,
         # possible values with their colors
@@ -44,7 +44,6 @@ COLUMNS = [
             "Low": const.GREEN,
             "Medium": const.BLUE,
             "High": const.PINK,
-            "Critical": const.RED_KRAYOLA,
             "Done": const.GREEN_GOOD,
             "New": const.WHITE,
         },
@@ -87,58 +86,51 @@ COLUMNS = [
     {"name": "Comment", "width": 550},
 ]
 
-# team for every sheet
-TEAMS = {
-    "Python": [
-        "IlyaFaer",
-        "HemangChothani",
-        "mf2199",
-        "sangramql",
-        "Emar-Kar",
-        "paul1319",
-        "Other",
-        "N/A",
-    ],
-    "NodeJS": [
-        "laljikanjareeya",
-        "praveenqlogic01",
-        "jiren",
-        "vishald123",
-        "AVaksman",
-        "IvanAvanessov",
-        "dmitry-fa",
-        "Other",
-        "N/A",
-    ],
-    "Golang": ["IlyaFaer", "AlisskaPie", "Other", "N/A"],
-    "PHP": ["andrewinc", "ava12", "Other", "N/A"],
-    "Java": ["athakor", "pmakani", "rahulKQL", "dmitry-fa", "Other", "N/A"],
-}
-
-
-# set teams into column settings (every sheet has it's own team)
-GO_COLUMNS = copy.copy(COLUMNS)
-GO_COLUMNS[7]["values"] = TEAMS["Golang"]
+# set teams into column settings
+GO_COLUMNS = copy.deepcopy(COLUMNS)
+GO_COLUMNS[7]["values"] = ["IlyaFaer", "AlisskaPie", "Other", "N/A"]
 
 PY_COLUMNS = copy.deepcopy(COLUMNS)
-PY_COLUMNS[7]["values"] = TEAMS["Python"]
+PY_COLUMNS[7]["values"] = [
+    "IlyaFaer",
+    "HemangChothani",
+    "mf2199",
+    "paul1319",
+    "Other",
+    "N/A",
+]
 
 JS_COLUMNS = copy.deepcopy(COLUMNS)
-JS_COLUMNS[7]["values"] = TEAMS["NodeJS"]
+JS_COLUMNS[7]["values"] = [
+    "laljikanjareeya",
+    "praveenqlogic01",
+    "jiren",
+    "vishald123",
+    "AVaksman",
+    "dmitry-fa",
+    "Other",
+    "N/A",
+]
 
 PHP_COLUMNS = copy.deepcopy(COLUMNS)
-PHP_COLUMNS[7]["values"] = TEAMS["PHP"]
+PHP_COLUMNS[7]["values"] = ["AVaksman", "ava12", "Other", "N/A"]
 
 JAVA_COLUMNS = copy.deepcopy(COLUMNS)
-JAVA_COLUMNS[7]["values"] = TEAMS["Java"]
+JAVA_COLUMNS[7]["values"] = [
+    "athakor",
+    "pmakani",
+    "rahulKQL",
+    "dmitry-fa",
+    "Other",
+    "N/A",
+]
 
 # TODO: set your spreadsheet structure
 SHEETS = {
     # -----------------------------
     "Python": {  # sheet name
-        "labels": projects_labels,  # meaningful labels
+        "labels": PROJECTS_LABELS,  # meaningful labels
         "repo_names": {  # repos to track on this sheet
-            # every key will be used with prefix: github.com/
             "googleapis/python-logging": "Logging",
             "googleapis/python-dataproc": "Dataproc",
             "googleapis/python-datastore": "Datastore",
@@ -200,7 +192,7 @@ SHEETS = {
     },
     # -----------------------------
     "Golang": {
-        "labels": projects_labels,
+        "labels": PROJECTS_LABELS,
         "repo_names": {
             "googleapis/google-cloud-go": "Cloud",
             "googleapis/google-api-go-client": "ApiClient",
@@ -209,12 +201,12 @@ SHEETS = {
     },
     # -----------------------------
     "PHP": {
-        "labels": projects_labels,
+        "labels": PROJECTS_LABELS,
         "repo_names": {"googleapis/google-cloud-php": "GCPHP"},
         "columns": PHP_COLUMNS,
     },
     "Java": {
-        "labels": projects_labels,
+        "labels": PROJECTS_LABELS,
         "repo_names": {
             "googleapis/java-bigtable-hbase": "BT HBase",
             "googleapis/java-datalabeling": "Data Labeling",

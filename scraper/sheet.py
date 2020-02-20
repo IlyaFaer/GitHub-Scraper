@@ -1,10 +1,10 @@
 """API which controls single Google Sheet."""
-import sheet_builder
 import string
 import fill_funcs
+import sheet_builder
 from const import DIGITS_PATTERN
-from utils import BatchIterator, get_num_from_formula
 from instances import Columns, Row
+from utils import BatchIterator, get_num_from_formula
 
 
 class Sheet:
@@ -27,7 +27,7 @@ class Sheet:
     def create_request(self):
         """'Create' request for this sheet.
 
-        Can be used to create real sheet if this object
+        Can be used to create real sheet, if this object
         was initiated before real sheet creation.
 
         Returns:
@@ -143,7 +143,7 @@ class Sheet:
         ).execute()
 
     def _post_requests(self, ss_resource, requests):
-        """Post requests with batch update.
+        """Post requests with batchUpdate().
 
         Args:
             requests (list):
@@ -179,7 +179,7 @@ class Sheet:
             .get("values")
         )
 
-        if table is None:
+        if table is None:  # sheet is completely clear
             self._format_sheet(ss_resource)
             table = (
                 ss_resource.values()
@@ -219,10 +219,9 @@ class Sheet:
             list: Lists, each of which represents single row.
             list: Dicts, each of which represents single coloring request.
         """
-        requests = []
-
         new_table = list(tracked_issues)
         new_table.sort(key=fill_funcs.sort_func)
+        requests = []
 
         # convert rows into lists
         for index, row in enumerate(new_table):
@@ -245,7 +244,6 @@ class Sheet:
         """
         for new_id in new_issues.keys():
             tracked_issues[new_id] = Row(self._columns.names)
-            prs = self._builder.get_related_prs(new_id)
 
             for col in self._columns.names:
                 self._columns.fill_funcs[col](
@@ -253,7 +251,7 @@ class Sheet:
                     new_issues[new_id],
                     self.name,
                     self._config,
-                    prs,
+                    self._builder.get_related_prs(new_id),
                     True,
                 )
 
