@@ -6,7 +6,7 @@ import datetime
 import logging
 from github import Github
 from pr_index import PullRequestsIndex
-from utils import try_match_keywords
+from utils import try_match_keywords, parse_url
 
 
 class SheetBuilder:
@@ -20,7 +20,6 @@ class SheetBuilder:
     def __init__(self):
         self._repos = {}  # repos tracked by this builder
         self._repo_names = {}
-        self._repo_names_inverse = {}
         # time when any issue was last updated in every repo
         self._last_issue_updates = {}
         self.prs_index = PullRequestsIndex()
@@ -41,7 +40,7 @@ class SheetBuilder:
         Returns:
             dict:
                 Index of issues in format:
-                {(issue.number, repo_short_name): github.Issue.Issue}
+                {issue.html_url: github.Issue.Issue}
         """
         is_first_update = False
         updated_issues = {}
@@ -50,7 +49,7 @@ class SheetBuilder:
             repo = self._repos.setdefault(
                 repo_name, self._gh_client.get_repo(repo_name)
             )
-            self.prs_index.index_closed_prs(repo, self._repo_names.get(repo.full_name))
+            self.prs_index.index_closed_prs(repo)
 
             # process issues of the repo
             issues = repo.get_issues(**self._build_filter(repo_name))
@@ -68,7 +67,6 @@ class SheetBuilder:
                 self._last_issue_updates[repo_name] = max(
                     self._last_issue_updates[repo_name], issue.updated_at
                 )
-
                 # log progress if repo is too big
                 if is_first_update and issues.totalCount > 1600:
                     if (index + 1) % 400 == 0:
@@ -77,7 +75,6 @@ class SheetBuilder:
                                 num=index + 1, total=issues.totalCount
                             )
                         )
-
             logging.info("{repo}: issues processed".format(repo=repo.full_name))
 
         self._issues_index.update(updated_issues)
@@ -87,7 +84,7 @@ class SheetBuilder:
         """Get issue object saved in internal index.
 
         Args:
-            tracked_id (list): Issue number and repo short name.
+            tracked_id (str): Issue HTML URL.
 
         Returns:
             github.Issue.Issue: Issue object from index.
@@ -98,27 +95,27 @@ class SheetBuilder:
         """Delete issue from internal index.
 
         Args:
-            tracked_id (list): Issue number and repo short name.
+            tracked_id (str): Issue HTML URL.
         """
         self._issues_index.pop(tracked_id)
 
-    def read_issue(self, issue_num, repo_lts):
+    def read_issue(self, url):
         """Read issue by it's number and repository short name.
 
         Args:
-            issue_num (str): Number of issue.
+            issue_num (str): Issue number.
             repo_lst (str): Repository short name.
 
         Returns:
             github.Issue.Issue: Issue object from GitHub.
         """
-        repo_name = self._repo_names_inverse.get(repo_lts)
-        if repo_name is None:
+        repo_name, issue_num = parse_url(url)
+        repo = self._repos.get(repo_name)
+        if not repo:
             return
 
-        repo = self._repos.get(repo_name)
         issue = repo.get_issue(int(issue_num))
-        self._issues_index[(issue_num, repo_lts)] = issue
+        self._issues_index[issue.html_url] = issue
         return issue
 
     def reload_config(self, config):
@@ -128,7 +125,6 @@ class SheetBuilder:
             config (dict): Dict with sheet's configurations.
         """
         self._repo_names = config["repo_names"]
-        self._repo_names_inverse = dict((v, k) for k, v in self._repo_names.items())
 
     def get_related_prs(self, issue_id):
         """Return pull requests of the specified issue.
@@ -181,17 +177,17 @@ class SheetBuilder:
             repo (github.Repository.Repository): Repository object.
 
         Returns:
-            tuple: issue's number and repo short name.
+            str: Issue URL.
         """
-        repo_lts = self._repo_names.get(repo.full_name)
-
         # issue is not a pull request
         if issue.pull_request is None:
-            return (str(issue.number), repo_lts)
+            return issue.html_url
 
         # issue is pull request - indexate it
         key_phrases = try_match_keywords(issue.body)
         for key_phrase in key_phrases:
-            self.prs_index.add(repo_lts, issue.as_pull_request(), key_phrase)
+            self.prs_index.add(
+                issue.repository.html_url, issue.as_pull_request(), key_phrase
+            )
 
-        return ()
+        return ""

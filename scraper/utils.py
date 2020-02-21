@@ -48,6 +48,32 @@ def get_num_from_formula(formula):
     return formula
 
 
+def get_url_from_formula(formula):
+    """Return URL from given HYPERLINK formula.
+
+    Args:
+        formula (str): HYPERLINK formula.
+
+    Returns:
+        str: Resource URL.
+    """
+    return formula.split('",')[0][12:]
+
+
+def parse_url(url):
+    """Return repo full name and issue from the given URL.
+
+    Args:
+        url (str): URL of the resource.
+
+    Returns:
+        (str, str): Repository URL, issue number.
+    """
+    parts = url.split("/issues/")
+    repo_name = parts[0].replace("https://github.com/", "")
+    return repo_name, parts[1]
+
+
 def build_url_formula(issue):
     """Build formula with issue's URL.
 

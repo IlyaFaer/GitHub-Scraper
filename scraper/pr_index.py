@@ -11,7 +11,7 @@ class PullRequestsIndex(dict):
     """Pull requests index.
 
     Index is built this way:
-        (<issue number>, <repository short name>):
+        <issue URL>:
             [<PR related to this issue>, <PR related to this issue>...]
     """
 
@@ -24,7 +24,7 @@ class PullRequestsIndex(dict):
         """Get PRs related to the given issue.
 
         Args:
-            issue_id (tuple): Tuple with issue number and repo short name.
+            issue_id (str): Issue URL.
 
         Returns:
             list: Related PRs objects.
@@ -33,23 +33,22 @@ class PullRequestsIndex(dict):
         prs.sort(key=sort_pull_requests, reverse=True)
         return prs
 
-    def index_closed_prs(self, repo, repo_lts):
-        """Add closed pull requests into PRs index.
+    def index_closed_prs(self, repo):
+        """Add closed pull requests into index.
 
         Method remembers last PR's update time and doesn't
-        indexate PRs which weren't updated since last
+        indexate PRs which weren't updated since the last
         spreadsheet update.
 
         Args:
-            repo (github.Repository.Repository):
-                Repository object.
-            repo (str): Repo short name.
+            repo (github.Repository.Repository): Repository object.
         """
         is_first_update = False
         pulls = repo.get_pulls(state="closed", sort="updated", direction="desc")
 
         if pulls.totalCount:
             logging.info("{repo}: indexing pull requests".format(repo=repo.full_name))
+
             for index, pull in enumerate(pulls):
                 if repo.full_name not in self._last_pr_updates.keys():
                     self._last_pr_updates[repo.full_name] = datetime.datetime(1, 1, 1)
@@ -60,7 +59,7 @@ class PullRequestsIndex(dict):
 
                 key_phrases = try_match_keywords(pull.body)
                 for key_phrase in key_phrases:
-                    self.add(repo_lts, pull, key_phrase)
+                    self.add(repo.html_url, pull, key_phrase)
 
                 if is_first_update and pulls.totalCount > 1600:
                     if (index + 1) % 400 == 0:
@@ -74,13 +73,14 @@ class PullRequestsIndex(dict):
                 "{repo}: all pull requests indexed".format(repo=repo.full_name)
             )
 
-    def add(self, repo_lts, lpr, key_exp):
+    def add(self, repo_url, lpr, key_exp):
         """Add PR object into index or update it."""
         issue_num = key_exp.split("#")[1]
-        if not (issue_num, repo_lts) in self:
-            self[issue_num, repo_lts] = []
+        issue_url = repo_url + "/issues/" + issue_num
+        if issue_url not in self:
+            self[issue_url] = []
 
-        self._add_or_update_pr(self[issue_num, repo_lts], lpr)
+        self._add_or_update_pr(self[issue_url], lpr)
 
     def _add_or_update_pr(self, prs, pr):
         """Update PR in index or add it into index.
@@ -95,7 +95,7 @@ class PullRequestsIndex(dict):
             if old_pr.number == pr.number:
                 prs[index] = pr
                 is_old = True
-                break
+                return
 
         if not is_old:
             prs.append(pr)

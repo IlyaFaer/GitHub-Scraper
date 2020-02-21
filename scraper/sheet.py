@@ -4,7 +4,7 @@ import fill_funcs
 import sheet_builder
 from const import DIGITS_PATTERN
 from instances import Columns, Row
-from utils import BatchIterator, get_num_from_formula
+from utils import BatchIterator, get_url_from_formula
 
 
 class Sheet:
@@ -70,25 +70,25 @@ class Sheet:
 
         to_be_deleted = []
         # merging the new table into the old one
-        for tracked_id in tracked_issues.keys():
+        for issue_id in tracked_issues.keys():
             issue_obj = None
-            if tracked_id in updated_issues:
-                issue_obj = updated_issues.pop(tracked_id)
+            if issue_id in updated_issues.keys():
+                issue_obj = updated_issues.pop(issue_id)
             # on a first update check old (closed issues included)
             # rows too in case of Scraper restarts
             elif self._builder.first_update:
-                issue_obj = self._builder.read_issue(*tracked_id)
+                issue_obj = self._builder.read_issue(issue_id)
             # if issue wasn't updated, take it's last
             # version from internal index
             else:
-                issue_obj = self._builder.get_from_index(tracked_id)
+                issue_obj = self._builder.get_from_index(issue_id)
 
-            prs = self._builder.get_related_prs(tracked_id)
+            prs = self._builder.get_related_prs(issue_id)
             if issue_obj:
                 # update columns using fill function
                 for col in self._columns.names:
                     self._columns.fill_funcs[col](
-                        tracked_issues[tracked_id],
+                        tracked_issues[issue_id],
                         issue_obj,
                         self.name,
                         self._config,
@@ -97,10 +97,10 @@ class Sheet:
                     )
 
                 to_del = fill_funcs.to_be_deleted(
-                    tracked_issues[tracked_id], issue_obj, prs
+                    tracked_issues[issue_id], issue_obj, prs
                 )
                 if to_del:
-                    to_be_deleted.append(tracked_id)
+                    to_be_deleted.append(issue_id)
 
         for id_ in to_be_deleted:
             tracked_issues.pop(id_)
@@ -260,7 +260,7 @@ def _build_index(table, column_names):
     """
     Build dict containing:
     {
-        (issue_number, repo_name): Row
+        <issue HTML URL>: Row
     }
 
     Args:
@@ -275,9 +275,7 @@ def _build_index(table, column_names):
         row = Row(column_names)
         row.fill_from_list(list_)
 
-        key = (get_num_from_formula(row["Issue"]), row["Repository"])
-        issues_index[key] = row
-
+        issues_index[get_url_from_formula(row["Issue"])] = row
     return issues_index
 
 
