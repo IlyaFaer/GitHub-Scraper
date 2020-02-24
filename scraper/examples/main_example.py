@@ -8,7 +8,6 @@ specified interval. Before every update tracker reloads
 config.py module to get new preferences and filling functions.
 """
 import time
-import importlib
 import config
 from spreadsheet import Spreadsheet
 
@@ -20,12 +19,6 @@ spreadsheet = Spreadsheet(config, spreadsheet_id)
 
 # updating the spreadsheet at the specified period
 while True:
-    # reload configurations and constants
-    # before updating the spreadsheet
-    config.fill_funcs = importlib.reload(config.fill_funcs)
-    config.const = importlib.reload(config.const)
-    config = importlib.reload(config)
-
     spreadsheet.reload_config(config)
     spreadsheet.update_structure()
     spreadsheet.update_all_sheets()

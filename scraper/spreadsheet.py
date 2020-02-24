@@ -1,4 +1,5 @@
 """API to control Google Spreadsheet."""
+import importlib
 import logging
 import os.path
 import auth
@@ -110,6 +111,11 @@ class Spreadsheet:
             config (module):
                 Imported config.py module with preferences.
         """
+        # reload configurations and constants
+        config.fill_funcs = importlib.reload(config.fill_funcs)
+        config.const = importlib.reload(config.const)
+        config = importlib.reload(config)
+
         config_update = os.path.getmtime(config.__file__)
         self._config_updated = config_update != self._last_config_update
 
