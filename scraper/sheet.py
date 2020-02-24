@@ -71,17 +71,7 @@ class Sheet:
         to_be_deleted = []
         # merging the new table into the old one
         for issue_id in tracked_issues.keys():
-            issue_obj = None
-            if issue_id in updated_issues.keys():
-                issue_obj = updated_issues.pop(issue_id)
-            # on a first update check old (closed issues included)
-            # rows too in case of Scraper restarts
-            elif self._builder.first_update:
-                issue_obj = self._builder.read_issue(issue_id)
-            # if issue wasn't updated, take it's last
-            # version from internal index
-            else:
-                issue_obj = self._builder.get_from_index(issue_id)
+            issue_obj = self._spot_issue_object(issue_id, updated_issues)
 
             prs = self._builder.get_related_prs(issue_id)
             if issue_obj:
@@ -115,6 +105,29 @@ class Sheet:
         self._clear_bottom(ss_resource, len(tracked_issues), len(self._columns.names))
         self._post_requests(ss_resource, requests)
         self._builder.first_update = False
+
+    def _spot_issue_object(self, id_, updated_issues):
+        """Designate issue object.
+
+        Args:
+            id_ (str): Issue URL.
+            updated_issues (dict): Dict of issues updated after the last filling.
+
+        Returns:
+            (github.Issue.Issue): Issue object.
+        """
+        # issue was update
+        if id_ in updated_issues.keys():
+            return updated_issues.pop(id_)
+        # issue closed, but it's the first update after start
+        elif self._builder.first_update:
+            return self._builder.read_issue(id_)
+        # issue wasn't updated, and it's not the first update
+        # after start - take issue object from index
+        else:
+            return self._builder.get_from_index(id_)
+
+        return None
 
     def _insert(self, ss_resource, rows, start_from):
         """Write new data into this sheet.

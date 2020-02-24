@@ -22,11 +22,12 @@ class SheetBuilder:
         self._repo_names = {}
         # time when any issue was last updated in every repo
         self._last_issue_updates = {}
-        self.prs_index = PullRequestsIndex()
         # dict in which we aggregate all of the issue objects
         # used to avoid re-reading unupdated issues from GitHub
         self._issues_index = {}
         self._gh_client = self._login_on_github()
+
+        self.prs_index = PullRequestsIndex()
         self.first_update = True
 
     def retrieve_updated(self):
@@ -60,9 +61,7 @@ class SheetBuilder:
                     self._last_issue_updates[repo_name] = datetime.datetime(1, 1, 1)
                     is_first_update = True
 
-                id_ = self._build_issue_id(issue, repo)
-                if id_:
-                    updated_issues[id_] = issue
+                self._process_issue(issue, updated_issues)
 
                 self._last_issue_updates[repo_name] = max(
                     self._last_issue_updates[repo_name], issue.updated_at
@@ -99,17 +98,16 @@ class SheetBuilder:
         """
         self._issues_index.pop(tracked_id)
 
-    def read_issue(self, url):
-        """Read issue by it's number and repository short name.
+    def read_issue(self, id_):
+        """Read issue by it's URL.
 
         Args:
-            issue_num (str): Issue number.
-            repo_lst (str): Repository short name.
+            id_ (str): Issue HTML URL.
 
         Returns:
             github.Issue.Issue: Issue object from GitHub.
         """
-        repo_name, issue_num = parse_url(url)
+        repo_name, issue_num = parse_url(id_)
         repo = self._repos.get(repo_name)
         if not repo:
             return
@@ -122,7 +120,7 @@ class SheetBuilder:
         """Update builder's configurations - list of tracked repos.
 
         Args:
-            config (dict): Dict with sheet's configurations.
+            config (dict): Dict with sheet configurations.
         """
         self._repo_names = config["repo_names"]
 
@@ -169,19 +167,16 @@ class SheetBuilder:
 
         return Github(login, password)
 
-    def _build_issue_id(self, issue, repo):
-        """Designate issue's id. If issue is PR, index it.
+    def _process_issue(self, issue, updated_issues):
+        """If issue is PR, indexate it. Add into updated index otherwise.
 
         Args:
             issue (github.Issue.Issue): Issue object.
-            repo (github.Repository.Repository): Repository object.
-
-        Returns:
-            str: Issue URL.
+            updated_issues (dict): Updated issues index.
         """
-        # issue is not a pull request
         if issue.pull_request is None:
-            return issue.html_url
+            updated_issues[issue.html_url] = issue
+            return
 
         # issue is pull request - indexate it
         key_phrases = try_match_keywords(issue.body)
@@ -189,5 +184,3 @@ class SheetBuilder:
             self.prs_index.add(
                 issue.repository.html_url, issue.as_pull_request(), key_phrase
             )
-
-        return ""
