@@ -9,14 +9,20 @@ import examples.config_example  # noqa: E402
 sys.modules["config"] = examples.config_example
 
 import spreadsheet  # noqa: E402
+import logging  # noqa: E402
 import unittest  # noqa: E402
 import unittest.mock as mock  # noqa: E402
-from mocks import ConfigMock, SpreadsheetMock, SheetMock, SheetBuilderMock  # noqa: E402
+from mocks import (
+    ConfigMock,
+    SpreadsheetMock,
+    SheetMock,
+    SheetBuilderMock,
+    return_module,
+)  # noqa: E402
 import github  # noqa: E402
 
+logging.disable(logging.INFO)
 SPREADSHEET_ID = "ss_id"
-
-
 CONFIG = ConfigMock()
 
 
@@ -215,15 +221,17 @@ class TestSpreadsheet(unittest.TestCase):
 
         # check if all sheets configurations were reloaded
         with mock.patch("sheet.Sheet.reload_config") as sheet_reload_mock:
-            self._ss_mock.reload_config(new_config)
+            with mock.patch("importlib.reload", side_effect=return_module):
+                self._ss_mock.reload_config(new_config)
 
-            self.assertEqual(self._ss_mock._config, new_config)
-            sheet_reload_mock.assert_has_calls((mock.call({}), mock.call({})))
+                self.assertEqual(self._ss_mock._config, new_config)
+                sheet_reload_mock.assert_has_calls((mock.call({}), mock.call({})))
 
         # check if configurations were not reloaded
         with mock.patch("sheet.Sheet.reload_config") as sheet_reload_mock:
-            self._ss_mock.reload_config(new_config)
-            sheet_reload_mock.assert_not_called()
+            with mock.patch("importlib.reload", side_effect=return_module):
+                self._ss_mock.reload_config(new_config)
+                sheet_reload_mock.assert_not_called()
 
     def test_init_sheets(self):
         SHEET1 = "sheet1"

@@ -1,8 +1,10 @@
-import github  # noqa: E402
-from sheet import Sheet  # noqa: E402
-from sheet_builder import SheetBuilder  # noqa: E402
+"""Manual mocks of some Scraper classes."""
+import github
+from sheet import Sheet
+from sheet_builder import SheetBuilder
 import spreadsheet
-
+import const
+import examples.fill_funcs_example
 
 SPREADSHEET_ID = "ss_id"
 
@@ -28,6 +30,8 @@ class ConfigMock:
         self.SHEETS = {"sheet1": {"repo_names": {}}, "sheet2": {}}
         self.TITLE = "MockTitle"
         self.__file__ = 0
+        self.const = const
+        self.fill_funcs = examples.fill_funcs_example
 
 
 class SpreadsheetMock(spreadsheet.Spreadsheet):
@@ -44,3 +48,8 @@ class SpreadsheetMock(spreadsheet.Spreadsheet):
         self._last_config_update = -1
         self._ss_resource = None
         self._config_updated = True
+
+
+def return_module(module):
+    """Mock for importlib.reload(). Returns argument."""
+    return module

@@ -1,6 +1,10 @@
 """Unit tests for scraper utils."""
+import logging
 import unittest
 import utils
+
+
+logging.disable(logging.INFO)
 
 
 class IssueMock:

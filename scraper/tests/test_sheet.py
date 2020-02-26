@@ -7,11 +7,13 @@ sys.modules["fill_funcs"] = examples.fill_funcs_example
 import examples.config_example  # noqa: E402
 
 sys.modules["config"] = examples.config_example
+import logging  # noqa: E402
 import unittest  # noqa: E402
 import unittest.mock as mock  # noqa: E402
 from mocks import SheetMock  # noqa: E402
 
 
+logging.disable(logging.INFO)
 SPREADSHEET_ID = "ss_id"
 
 
