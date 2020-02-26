@@ -256,6 +256,9 @@ class Sheet:
             new_issues (dict): Index with only recently created issues.
         """
         for new_id in new_issues.keys():
+            if fill_funcs.to_be_ignored(new_issues[new_id]):
+                continue
+
             tracked_issues[new_id] = Row(self._columns.names)
 
             for col in self._columns.names:

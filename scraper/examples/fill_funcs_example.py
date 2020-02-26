@@ -175,6 +175,26 @@ def to_be_deleted(row, issue, prs):
     return False
 
 
+def to_be_ignored(issue):
+    """Condition function to designate if issue shouldn't be tracked.
+
+    Unlike to_be_deleted() function, which implements table
+    cleanup, this function is used to completely ignore issues.
+    If the function returns True, issue will not be added into
+    the table, and tracked in future.
+
+    Args:
+        issue (github.Issue.Issue):
+            Issue which pretends to be added into the table.
+
+    Returns:
+        bool:
+            True if issue should be ignored. False if issue
+            should be added into the table and tracked.
+    """
+    return False
+
+
 def sort_func(row):
     """Sorts data within single one sheet.
 
