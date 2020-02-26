@@ -2,7 +2,7 @@
 import string
 import fill_funcs
 import sheet_builder
-from const import DIGITS_PATTERN
+from reg_exps import DIGITS_PATTERN
 from instances import Columns, Row
 from utils import BatchIterator, get_url_from_formula
 

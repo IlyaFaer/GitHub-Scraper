@@ -7,7 +7,6 @@ own config.py (see TODO). Your config.py will not be Git-tracked.
 """
 import copy
 import fill_funcs
-import const
 
 
 # {<label name>: <project name>}
@@ -40,12 +39,12 @@ COLUMNS = [
         # possible values with their colors
         # column will become drop-down list
         "values": {
-            "Closed": const.GREY,
-            "Low": const.GREEN,
-            "Medium": const.BLUE,
-            "High": const.PINK,
-            "Done": const.GREEN_GOOD,
-            "New": const.WHITE,
+            "Closed": {"red": 0.6, "green": 0.6, "blue": 0.6},  # grey
+            "Low": {"red": 0.77, "green": 0.93, "blue": 0.82},  # green
+            "Medium": {"red": 0.85, "green": 0.85, "blue": 1},  # blue
+            "High": {"red": 1, "green": 0.36, "blue": 0.47},  # pink
+            "Done": {"red": 0, "green": 0.65, "blue": 0.31},  # dark green
+            "New": {"red": 1, "green": 1, "blue": 1},  # white
         },
     },
     {
@@ -60,10 +59,10 @@ COLUMNS = [
         "align": "CENTER",
         "fill_func": fill_funcs.fill_status,
         "values": {
-            "Pending": const.WHITE,
-            "In progress": const.GREEN,
-            "Paused": const.YELLOW,
-            "Finished": const.GREY,
+            "Pending": {"red": 1, "green": 1, "blue": 1},  # white
+            "In progress": {"red": 0.77, "green": 0.93, "blue": 0.82},  # green
+            "Paused": {"red": 1, "green": 1, "blue": 0.6},  # yellow
+            "Finished": {"red": 0.6, "green": 0.6, "blue": 0.6},  # grey
         },
     },
     {
@@ -88,20 +87,20 @@ COLUMNS = [
 
 # set teams into column settings
 GO_COLUMNS = copy.deepcopy(COLUMNS)
-GO_COLUMNS[7]["values"] = ["IlyaFaer", "AlisskaPie", "Other", "N/A"]
+GO_COLUMNS[7]["values"] = ("IlyaFaer", "AlisskaPie", "Other", "N/A")
 
 PY_COLUMNS = copy.deepcopy(COLUMNS)
-PY_COLUMNS[7]["values"] = [
+PY_COLUMNS[7]["values"] = (
     "IlyaFaer",
     "HemangChothani",
     "mf2199",
     "paul1319",
     "Other",
     "N/A",
-]
+)
 
 JS_COLUMNS = copy.deepcopy(COLUMNS)
-JS_COLUMNS[7]["values"] = [
+JS_COLUMNS[7]["values"] = (
     "laljikanjareeya",
     "praveenqlogic01",
     "jiren",
@@ -110,24 +109,23 @@ JS_COLUMNS[7]["values"] = [
     "dmitry-fa",
     "Other",
     "N/A",
-]
+)
 
 PHP_COLUMNS = copy.deepcopy(COLUMNS)
-PHP_COLUMNS[7]["values"] = ["AVaksman", "ava12", "Other", "N/A"]
+PHP_COLUMNS[7]["values"] = ("AVaksman", "ava12", "Other", "N/A")
 
 JAVA_COLUMNS = copy.deepcopy(COLUMNS)
-JAVA_COLUMNS[7]["values"] = [
+JAVA_COLUMNS[7]["values"] = (
     "athakor",
     "pmakani",
     "rahulKQL",
     "dmitry-fa",
     "Other",
     "N/A",
-]
+)
 
 # TODO: set your spreadsheet structure
 SHEETS = {
-    # -----------------------------
     "Python": {  # sheet name
         "labels": PROJECTS_LABELS,  # meaningful labels
         "repo_names": {  # repos to track on this sheet
@@ -205,6 +203,7 @@ SHEETS = {
         "repo_names": {"googleapis/google-cloud-php": "GCPHP"},
         "columns": PHP_COLUMNS,
     },
+    # -----------------------------
     "Java": {
         "labels": PROJECTS_LABELS,
         "repo_names": {

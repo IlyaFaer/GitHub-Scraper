@@ -1,5 +1,5 @@
 """Some utils for tracker."""
-from const import NUM_REGEX, PATTERNS
+from reg_exps import NUM_REGEX, PATTERNS
 
 
 class BatchIterator:

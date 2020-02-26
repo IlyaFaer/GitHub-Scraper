@@ -26,7 +26,6 @@ date (DESC).
 is_new (bool): New issue in table.
 """
 import datetime
-from const import GREY, PINK
 from utils import build_url_formula, get_num_from_formula
 
 
@@ -80,7 +79,7 @@ def fill_issue(old_issue, issue, sheet_name, sheet_config, prs, is_new):
         old_issue["Issue"] = build_url_formula(issue)
 
     if issue.closed_at:
-        old_issue.colors["Issue"] = GREY
+        old_issue.colors["Issue"] = {"red": 0.6, "green": 0.6, "blue": 0.6}  # grey
 
 
 def fill_status(old_issue, issue, sheet_name, sheet_config, prs, is_new):
@@ -223,6 +222,6 @@ def _designate_status_color(pull, team):
         # purple
         color = {"red": 0.73, "green": 0.33, "blue": 0.83}
     elif pull.state == "closed" and not pull.merged:
-        color = PINK
+        color = {"red": 1, "green": 0.36, "blue": 0.47}  # pink
 
     return color

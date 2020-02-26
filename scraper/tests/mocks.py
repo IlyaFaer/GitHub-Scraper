@@ -3,7 +3,6 @@ import github
 from sheet import Sheet
 from sheet_builder import SheetBuilder
 import spreadsheet
-import const
 import examples.fill_funcs_example
 
 SPREADSHEET_ID = "ss_id"
@@ -30,7 +29,6 @@ class ConfigMock:
         self.SHEETS = {"sheet1": {"repo_names": {}}, "sheet2": {}}
         self.TITLE = "MockTitle"
         self.__file__ = 0
-        self.const = const
         self.fill_funcs = examples.fill_funcs_example
 
 

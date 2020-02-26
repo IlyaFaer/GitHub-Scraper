@@ -104,16 +104,15 @@ class Spreadsheet:
     def reload_config(self, config):
         """Load new configurations.
 
-        Set new configurations to this spreadsheet and all
-        of it's sheets.
+        Reload configurations and set them to this
+        spreadsheet and all of its sheets.
 
         Args:
             config (module):
                 Imported config.py module with preferences.
         """
-        # reload configurations and constants
+        # reload configurations and filling functions
         config.fill_funcs = importlib.reload(config.fill_funcs)
-        config.const = importlib.reload(config.const)
         config = importlib.reload(config)
 
         config_update = os.path.getmtime(config.__file__)
