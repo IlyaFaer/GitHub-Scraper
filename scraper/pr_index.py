@@ -57,8 +57,7 @@ class PullRequestsIndex(dict):
                 if pull.updated_at < self._last_pr_updates[repo.full_name]:
                     break
 
-                key_phrases = try_match_keywords(pull.body)
-                for key_phrase in key_phrases:
+                for key_phrase in try_match_keywords(pull.body):
                     self.add(repo.html_url, pull, key_phrase)
 
                 if is_first_update and pulls.totalCount > 1600:

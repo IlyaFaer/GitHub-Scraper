@@ -35,42 +35,45 @@ def fill_priority(old_issue, issue, sheet_name, sheet_config, prs, is_new):
         old_issue["Priority"] = "New"
         return
 
-    date_diff = datetime.date.today() - issue.created_at.date()
-    # if issue have been new for three or more days,
-    # auto designate it's priority
+    if old_issue["Priority"] in ("Closed", "Done"):
+        return
+
     labels = [label.name for label in issue.labels]
 
-    if old_issue["Priority"] not in ("Closed", "Done"):
-        if "backend" in labels:
-            old_issue["Priority"] = "Low"
-        elif "help wanted" in labels:
-            old_issue["Priority"] = "High"
-        elif old_issue["Priority"] == "New":
-            if date_diff.days > 3:
-                our_labels = []
+    if "backend" in labels:
+        old_issue["Priority"] = "Low"
+    elif "help wanted" in labels:
+        old_issue["Priority"] = "High"
+    elif old_issue["Priority"] == "New":
+        # if issue have been new for three or more days,
+        # designate it's priority
+        date_diff = datetime.date.today() - issue.created_at.date()
 
-                for our_label in (
-                    "api: storage",
-                    "api: spanner",
-                    "api: firestore",
-                    "api: datastore",
-                    "api: bigtable",
-                    "api: pubsub",
-                    "api: core",
-                ):
-                    if our_label in labels:
-                        our_labels.append(our_label)
+        if date_diff.days > 3:
+            our_labels = []
 
-                if our_labels:
-                    # bugs and help requests are prioritized
-                    if "type: bug" in labels:
-                        old_issue["Priority"] = "High"
-                    # other issues
-                    else:
-                        old_issue["Priority"] = "Medium"
-                # other projects
+            for our_label in (
+                "api: storage",
+                "api: spanner",
+                "api: firestore",
+                "api: datastore",
+                "api: bigtable",
+                "api: pubsub",
+                "api: core",
+            ):
+                if our_label in labels:
+                    our_labels.append(our_label)
+
+            if our_labels:
+                # bugs and help requests are prioritized
+                if "type: bug" in labels:
+                    old_issue["Priority"] = "High"
+                # other issues
                 else:
-                    old_issue["Priority"] = "Low"
+                    old_issue["Priority"] = "Medium"
+            # other projects
+            else:
+                old_issue["Priority"] = "Low"
 
 
 def fill_issue(old_issue, issue, sheet_name, sheet_config, prs, is_new):
@@ -100,23 +103,19 @@ def fill_description(old_issue, issue, sheet_name, sheet_config, prs, is_new):
 
 def fill_assignee(old_issue, issue, sheet_name, sheet_config, prs, is_new):
     """'Assignee' column filling."""
-    one_of_us = False
-
     if issue.assignees:
         for assignee in issue.assignees:
             if assignee.login in sheet_config["columns"][7]["values"]:
-                one_of_us = True
                 old_issue["Assignee"] = assignee.login
-                break
-        if not one_of_us:
-            old_issue["Assignee"] = "Other"
+                return
+
+        old_issue["Assignee"] = "Other"
     else:
         old_issue["Assignee"] = "N/A"
 
 
 def fill_repository(old_issue, issue, sheet_name, sheet_config, prs, is_new):
     """'Repository' column filling."""
-    # new issue
     if is_new:
         old_issue["Repository"] = sheet_config["repo_names"][issue.repository.full_name]
 
@@ -138,6 +137,7 @@ def fill_ppr(old_issue, issue, sheet_name, sheet_config, prs, is_new):
     """'Public PR' column filling."""
     if prs:
         old_issue["Public PR"] = build_url_formula(prs[0])
+
         old_issue.colors["Public PR"] = _designate_status_color(
             prs[0], sheet_config["columns"][7]["values"]
         )
@@ -213,15 +213,16 @@ def _designate_status_color(pull, team):
     Returns:
         dict: Color to fill the cell.
     """
-    color = {"red": 1, "green": 1, "blue": 1}
-
     if pull.user.login not in team:
         # yellow
-        color = {"red": 1, "green": 0.81, "blue": 0.28}
-    elif pull.merged:
-        # purple
-        color = {"red": 0.73, "green": 0.33, "blue": 0.83}
-    elif pull.state == "closed" and not pull.merged:
-        color = {"red": 1, "green": 0.36, "blue": 0.47}  # pink
+        return {"red": 1, "green": 0.81, "blue": 0.28}
 
-    return color
+    if pull.merged:
+        # purple
+        return {"red": 0.73, "green": 0.33, "blue": 0.83}
+
+    if pull.state == "closed":
+        # pink
+        return {"red": 1, "green": 0.36, "blue": 0.47}
+
+    return {"red": 1, "green": 1, "blue": 1}

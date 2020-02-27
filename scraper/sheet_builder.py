@@ -36,11 +36,11 @@ class SheetBuilder:
         If this is the first update, than retrieve all of the
         opened issues. If update is subsequent, than only issues
         (opened and closed), which were updated since the last
-        update will be processed.
+        update, will be processed.
 
         Returns:
             dict:
-                Index of issues in format:
+                Issues index in format:
                 {issue.html_url: github.Issue.Issue}
         """
         is_first_update = False
@@ -179,8 +179,7 @@ class SheetBuilder:
             return
 
         # issue is pull request - indexate it
-        key_phrases = try_match_keywords(issue.body)
-        for key_phrase in key_phrases:
+        for key_phrase in try_match_keywords(issue.body):
             self.prs_index.add(
                 issue.repository.html_url, issue.as_pull_request(), key_phrase
             )

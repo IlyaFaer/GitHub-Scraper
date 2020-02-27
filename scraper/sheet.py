@@ -127,8 +127,6 @@ class Sheet:
         else:
             return self._builder.get_from_index(id_)
 
-        return None
-
     def _insert(self, ss_resource, rows, start_from):
         """Write new data into this sheet.
 
@@ -203,10 +201,9 @@ class Sheet:
                 )
                 .execute()["values"]
             )
-        title_row, table = table[0], table[1:]
 
         self._columns = Columns(self._config["columns"], self.id)
-        return _build_index(table, title_row)
+        return _build_index(table[1:], table[0])
 
     def _clear_bottom(self, ss_resource, length, width):
         """Clear cells from the last actual row till the end.

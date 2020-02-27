@@ -49,7 +49,7 @@ def get_num_from_formula(formula):
 
 
 def get_url_from_formula(formula):
-    """Return URL from given HYPERLINK formula.
+    """Return URL from the given HYPERLINK formula.
 
     Args:
         formula (str): HYPERLINK formula.
@@ -64,7 +64,7 @@ def parse_url(url):
     """Return repo full name and issue from the given URL.
 
     Args:
-        url (str): URL of the resource.
+        url (str): Resource URL.
 
     Returns:
         (str, str): Repository URL, issue number.
@@ -81,19 +81,20 @@ def build_url_formula(issue):
         issue (github.Issue.Issue): Issue/PR object.
 
     Returns:
-        str: formula with issue's URL.
+        str: Formula with issue's URL.
     """
     url = '=HYPERLINK("{url}";"{num}")'.format(num=issue.number, url=issue.html_url)
     return url
 
 
 def try_match_keywords(body):
-    """Try to find keywords in issue's body.
+    """Try to find GitHub keywords in issue's body.
 
     Args:
         body (str): Issue's body.
 
-    Returns: List of key phrases with issue numbers, if found.
+    Returns:
+        list: Key phrases with issue numbers, if found.
     """
     result = []
     if body:

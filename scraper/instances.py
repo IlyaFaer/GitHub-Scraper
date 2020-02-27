@@ -35,7 +35,7 @@ class Columns:
     def requests(self):
         """
         Return all column requests. Title row request
-        must be first!
+        must be the first one!
 
         Returns:
             list: Columns formatting requests.
@@ -47,7 +47,7 @@ class Columns:
         """Return columns letter.
 
         Args:
-            column (str): Name of column.
+            column (str): Column name.
 
         Returns:
             str: Letter coordinate of the column.
@@ -88,7 +88,7 @@ class Columns:
 
         Args:
             index (int): Column index.
-            col (dict): Column description.
+            col (dict): Column configurations.
         """
         if col.get("type") == "date":
             request = {
@@ -246,15 +246,15 @@ class Row(dict):
             list: List with column values for the row.
         """
         row = []
-        if any(tuple(self.values())):
+        if any(self.values()):
             for name in self._column_names:
                 row.append(self[name])
         return row
 
     def fill_from_list(self, list_):
         """
-        Fill dict from the list. Relations between fields
-        and list elements are designated by columns list.
+        Fill this Row from the given list. Relations between
+        fields and list elements are designated by columns list.
 
         Args:
             list_ (list): List representation of the row.
