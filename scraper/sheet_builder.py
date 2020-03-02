@@ -44,7 +44,6 @@ class SheetBuilder:
                 {issue.html_url: github.Issue.Issue}
         """
         is_first_update = False
-        updated_issues = {}
 
         for repo_name in self._repo_names.keys():
             repo = self._repos.setdefault(
@@ -61,7 +60,7 @@ class SheetBuilder:
                     self._last_issue_updates[repo_name] = datetime.datetime(1, 1, 1)
                     is_first_update = True
 
-                self._process_issue(issue, updated_issues)
+                self._process_issue(issue)
 
                 self._last_issue_updates[repo_name] = max(
                     self._last_issue_updates[repo_name], issue.updated_at
@@ -76,8 +75,7 @@ class SheetBuilder:
                         )
             logging.info("{repo}: issues processed".format(repo=repo.full_name))
 
-        self._issues_index.update(updated_issues)
-        return updated_issues
+        return self._issues_index
 
     def get_from_index(self, tracked_id):
         """Get issue object saved in internal index.
@@ -167,15 +165,14 @@ class SheetBuilder:
 
         return Github(login, password)
 
-    def _process_issue(self, issue, updated_issues):
+    def _process_issue(self, issue):
         """If issue is PR, indexate it. Add into updated index otherwise.
 
         Args:
             issue (github.Issue.Issue): Issue object.
-            updated_issues (dict): Updated issues index.
         """
         if issue.pull_request is None:
-            updated_issues[issue.html_url] = issue
+            self._issues_index[issue.html_url] = issue
             return
 
         # issue is pull request - indexate it

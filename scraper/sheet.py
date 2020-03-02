@@ -99,7 +99,7 @@ class Sheet:
         self._insert_new_issues(tracked_issues, updated_issues)
         new_table, requests = self._prepare_table(tracked_issues.values())
 
-        self._format_sheet(ss_resource)
+        self._format(ss_resource)
         self._insert(ss_resource, new_table, "A2")
 
         self._clear_bottom(ss_resource, len(tracked_issues), len(self._columns.names))
@@ -166,7 +166,7 @@ class Sheet:
                     spreadsheetId=self.ss_id, body={"requests": batch}
                 ).execute()
 
-    def _format_sheet(self, ss_resource):
+    def _format(self, ss_resource):
         """Update sheet structure.
 
         Create title row in the specified sheet, format columns
@@ -191,7 +191,7 @@ class Sheet:
         )
 
         if table is None:  # sheet is completely clear
-            self._format_sheet(ss_resource)
+            self._format(ss_resource)
             table = (
                 ss_resource.values()
                 .get(
