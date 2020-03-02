@@ -10,8 +10,8 @@ GitHub-Scraper automatically builds issues and PRs tables in Google Sheets docum
 
 **Setup**  
 To build your tables and start tracking repositories you need:
-* Steps 1 and 2 of [Google Sheets API Setup](https://developers.google.com/sheets/api/quickstart/python)
-* Install [PyGitHub package](https://pygithub.readthedocs.io/en/latest/introduction.html)  
+* [Enable Google Sheets API](https://developers.google.com/sheets/api/quickstart/python#step_1_turn_on_the)  
+* Install required packages with *requirements.txt*    
 In *scraper* folder:
 * Create *loginpas.txt* and enter your GitHub credentials into it in format: `login/password`
 * Create *config.py* and set your tables configurations with it (see [config_example.py](https://github.com/IlyaFaer/GitHub-Scraper/blob/master/scraper/examples/config_example.py))
