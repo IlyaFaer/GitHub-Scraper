@@ -20,7 +20,7 @@ class SheetBuilder:
     def __init__(self):
         self._repos = {}  # repos tracked by this builder
         self._repo_names = {}
-        # time when any issue was last updated in every repo
+        # time and id of the issues last updated in the repos
         self._last_issue_updates = {}
         # dict in which we aggregate all of the issue objects
         # used to avoid re-reading unupdated issues from GitHub
@@ -58,14 +58,27 @@ class SheetBuilder:
 
             for index, issue in enumerate(issues):
                 if repo_name not in self._last_issue_updates.keys():
-                    self._last_issue_updates[repo_name] = datetime.datetime(1, 1, 1)
+                    self._last_issue_updates[repo_name] = (
+                        datetime.datetime(1, 1, 1),
+                        "",
+                    )
                     is_first_update = True
+
+                # "since" filter returns the issue, which was
+                # the last updated in previous filling - skip it
+                if (
+                    issue.updated_at == self._last_issue_updates[repo_name][0]
+                    and issue.html_url == self._last_issue_updates[repo_name][1]
+                ):
+                    continue
 
                 self._process_issue(issue, updated_issues)
 
-                self._last_issue_updates[repo_name] = max(
-                    self._last_issue_updates[repo_name], issue.updated_at
-                )
+                if issue.updated_at > self._last_issue_updates[repo_name][0]:
+                    self._last_issue_updates[repo_name] = (
+                        issue.updated_at,
+                        issue.html_url,
+                    )
                 # log progress if repo is too big
                 if is_first_update and issues.totalCount > 1600:
                     if (index + 1) % 400 == 0:
@@ -114,6 +127,10 @@ class SheetBuilder:
 
         issue = repo.get_issue(int(issue_num))
         self._issues_index[issue.html_url] = issue
+
+        if issue.updated_at > self._last_issue_updates[repo_name][0]:
+            self._last_issue_updates[repo_name] = (issue.updated_at, issue.html_url)
+
         return issue
 
     def reload_config(self, config):
@@ -155,7 +172,7 @@ class SheetBuilder:
             args = {
                 "sort": "updated",
                 "direction": "desc",
-                "since": self._last_issue_updates[repo_name],
+                "since": self._last_issue_updates[repo_name][0],
                 "state": "all",
             }
         return args

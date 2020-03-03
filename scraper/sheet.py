@@ -66,6 +66,9 @@ class Sheet:
     def update(self, ss_resource):
         """Update specified sheet with issues/PRs data."""
         updated_issues = self._builder.retrieve_updated()
+        if not updated_issues:
+            return
+
         tracked_issues = self._read(ss_resource)
 
         to_be_deleted = []
