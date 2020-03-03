@@ -83,7 +83,7 @@ def build_url_formula(issue):
     Returns:
         str: Formula with issue's URL.
     """
-    url = '=HYPERLINK("{url}";"{num}")'.format(num=issue.number, url=issue.html_url)
+    url = '=HYPERLINK("{url}","{num}")'.format(num=issue.number, url=issue.html_url)
     return url
 
 

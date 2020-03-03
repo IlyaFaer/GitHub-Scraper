@@ -1,0 +1,11 @@
+[report]
+exclude_lines=
+    # omit logging
+    logging.info
+    logging.exception
+    # omit common excepts
+    except Exception
+
+omit=
+    examples/*
+    tests/*

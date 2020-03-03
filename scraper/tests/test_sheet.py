@@ -74,3 +74,27 @@ class TestSheet(unittest.TestCase):
         clear_mock.assert_called_once_with(
             spreadsheetId=SPREADSHEET_ID, range="sheet1!A7:J"
         )
+
+    def test_spot_issue_object_updated(self):
+        """Test spotting issues objects."""
+        sheet = SheetMock("sheet1", SPREADSHEET_ID)
+
+        # check when issue was updated
+        self.assertEqual(
+            sheet._spot_issue_object("123", {"123": "updated_issue"}), "updated_issue"
+        )
+        # check on first update
+        sheet._builder.first_update = True
+        read_mock = mock.Mock(return_value="read_issue")
+
+        with mock.patch.object(sheet, "_builder", read_issue=read_mock):
+            self.assertEqual(
+                sheet._spot_issue_object("123", {"1253": "Issue"}), "read_issue"
+            )
+        # check when issue wasn't updated
+        sheet._builder.first_update = False
+        sheet._builder._issues_index = {"123": "index_issue"}
+
+        self.assertEqual(
+            sheet._spot_issue_object("123", {"1253": "Issue"}), "index_issue"
+        )
