@@ -191,6 +191,17 @@ def to_be_ignored(issue):
             True if issue should be ignored. False if issue
             should be added into the table and tracked.
     """
+    # On a first update after Scraper start last opened issue
+    # update time will be recorded. On next update it'll be
+    # used as "since" filter. With this, issues, which were closed
+    # after last opened issue update time will appear in table.
+    # Ignore these issues.
+    if not issue.closed_at:
+        return False
+
+    date_diff = datetime.date.today() - issue.closed_at.date()
+    if date_diff.days > 3:
+        return True
     return False
 
 
