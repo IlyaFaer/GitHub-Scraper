@@ -2,7 +2,7 @@
 
 GitHub-Scraper automatically builds issues and PRs tables in Google Sheets documents, and periodically updates them.
 * **Multirepo**: track several repositories within one sheet and several sheets within one spreadsheet
-* **Constructible**: tweak table structure, relations "repository-to-sheet" and filling functions
+* **Constructible**: tweak table structure, coloring and filling functions
 * **Adaptive**: change your preferences and add new repos/sheets without restarting Scraper
 * **Ready to go**: avoid tweaking Scraper and just use completely workable [examples](https://github.com/IlyaFaer/GitHub-Scraper/tree/master/scraper/examples)
 
@@ -23,10 +23,10 @@ Scraper will build tables and start tracking specified repositories. First filli
 **Structure, auto and manual filling**  
 You can tweak table filling in *fill_funcs.py*, leaving some columns for manual-only use (for example "Comment"), setting ignoring and  cleanup rules, sorting, coloring, etc., in any way you like.  
 
-Scraper uses *config.py* as a source of structure preferences. Before update it reloads *config.py* module, so you can change preferences without stoping Scraper - add new sheets, repositories, rules, etc.  
+Scraper uses *config.py* as a source of preferences. Before update it reloads *config.py* module, so you can change preferences without stoping Scraper - add new sheets, repositories, rules, etc.  
 
 **PR autodetection**  
-To make Scraper detect PRs, use GitHub keywords "Towards", "Closes", "Fixes" to make link from PRs body to the original issue. Scrapper will use these links to fill "Public PR" field in the related issues.  
+To make Scraper detect PRs, use GitHub keywords "Towards", "Closes", "Fixes" to make link from PRs body to the original issue. Scraper will use these links to fill "Public PR" field in the related issues.  
 
 **Beta version disclaimer**  
 Scraper is in a state of active development yet. Please, use Releases as the most stable versions, and feel free to open an issue in case of any problems.
