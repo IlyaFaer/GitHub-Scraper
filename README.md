@@ -16,20 +16,17 @@ In *scraper* folder:
 * Create *loginpas.txt* and enter your GitHub credentials into it in format: `login/password`
 * Create *config.py* and set your tables configurations with it (see [config_example.py](https://github.com/IlyaFaer/GitHub-Scraper/blob/master/scraper/examples/config_example.py))
 * Create *fill_funcs.py* and set your filling functions with it (see [fill_funcs_example.py](https://github.com/IlyaFaer/GitHub-Scraper/blob/master/scraper/examples/fill_funcs_example.py))
-* Create and run *main.py* (see [main_example.py](https://github.com/IlyaFaer/GitHub-Scraper/blob/master/scraper/examples/main_example.py)) - Scraper will build tables and start tracking specified repositories. First filling usually takes some time, but subsequent updates are faster (~80% faster), as Scraper is processing only recently updated PRs and issues.
+* Create and run *main.py* (see [main_example.py](https://github.com/IlyaFaer/GitHub-Scraper/blob/master/scraper/examples/main_example.py))
 
-If you're getting filling problems, check *logs.txt* file for traceback, and feel free to create an issue.
+Scraper will build tables and start tracking specified repositories. First filling can take time, but subsequent updates are faster (~80% faster), as Scraper is processing only recently updated PRs and issues. You can check filling progress in *logs.txt*. If any error occur, its traceback will be shown in *logs.txt* as well.
 
-**Auto and manual filling**  
-You can tweak table filling in *fill_funcs.py*, leaving some columns for manual-only use (for example "Comment").
+**Structure, auto and manual filling**  
+You can tweak table filling in *fill_funcs.py*, leaving some columns for manual-only use (for example "Comment"), setting ignoring and  cleanup rules, sorting, coloring, etc., in any way you like.  
 
-**Configurations**  
-Scraper uses *config.py* as a source of preferences. Before update it reloads *config.py* module, so you can change preferences without stoping Scraper. Configurations are set with several constants:
-* TITLE - spreadsheet name
-* UPDATE_PERIODICITY - duration of a pause between updates in seconds
-* SHEETS - spreadsheet preferences: list of sheets, meaningful labels, lists of corresponding repositories and teams
-* COLUMNS - column names, style and data validation
-* fill_funcs.sort_func - function for sorting issues within sheet  
+Scraper uses *config.py* as a source of structure preferences. Before update it reloads *config.py* module, so you can change preferences without stoping Scraper - add new sheets, repositories, rules, etc.  
 
 **PR autodetection**  
 To make Scraper detect PRs, use GitHub keywords "Towards", "Closes", "Fixes" to make link from PRs body to the original issue. Scrapper will use these links to fill "Public PR" field in the related issues.  
+
+**Beta version disclaimer**  
+Scraper is in a state of active development yet. Please, use Releases as the most stable versions, and feel free to open an issue in case of any problems.
