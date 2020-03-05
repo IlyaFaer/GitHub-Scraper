@@ -56,14 +56,11 @@ class SheetBuilder:
             issues = repo.get_issues(**self._build_filter(repo_name))
             logging.info("{repo}: processing issues".format(repo=repo.full_name))
 
-            for index, issue in enumerate(issues):
-                if repo_name not in self._last_issue_updates.keys():
-                    self._last_issue_updates[repo_name] = (
-                        datetime.datetime(1, 1, 1),
-                        "",
-                    )
-                    is_first_update = True
+            if repo_name not in self._last_issue_updates.keys():
+                self._last_issue_updates[repo_name] = (datetime.datetime(1, 1, 1), "")
+                is_first_update = True
 
+            for index, issue in enumerate(issues):
                 # "since" filter returns the issue, which was
                 # the last updated in previous filling - skip it
                 if (
