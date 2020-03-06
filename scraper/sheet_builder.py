@@ -52,13 +52,13 @@ class SheetBuilder:
             )
             self.prs_index.index_closed_prs(repo)
 
-            # process issues of the repo
-            issues = repo.get_issues(**self._build_filter(repo_name))
-            logging.info("{repo}: processing issues".format(repo=repo.full_name))
-
             if repo_name not in self._last_issue_updates.keys():
                 self._last_issue_updates[repo_name] = (datetime.datetime(1, 1, 1), "")
                 is_first_update = True
+
+            # process issues of the repo
+            issues = repo.get_issues(**self._build_filter(repo_name))
+            logging.info("{repo}: processing issues".format(repo=repo.full_name))
 
             for index, issue in enumerate(issues):
                 # "since" filter returns the issue, which was
@@ -162,7 +162,7 @@ class SheetBuilder:
             dict: Filter, ready to be passed into the method.
         """
         args = {}
-        if repo_name in self._last_issue_updates:
+        if self._last_issue_updates[repo_name][1]:
             # if it isn't the first get-issues request, than
             # we're adding sorting and "since" filter
             # to get only recently updated issues
