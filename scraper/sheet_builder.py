@@ -89,24 +89,25 @@ class SheetBuilder:
         self._issues_index.update(updated_issues)
         return updated_issues
 
-    def get_from_index(self, tracked_id):
+    def get_from_index(self, issue_id):
         """Get issue object saved in internal index.
 
         Args:
-            tracked_id (str): Issue HTML URL.
+            issue_id (str): Issue HTML URL.
 
         Returns:
             github.Issue.Issue: Issue object from index.
         """
-        return self._issues_index.get(tracked_id)
+        return self._issues_index.get(issue_id)
 
-    def delete_from_index(self, tracked_id):
+    def delete_from_index(self, issue_id):
         """Delete issue from internal index.
 
         Args:
-            tracked_id (str): Issue HTML URL.
+            issue_id (str): Issue HTML URL.
         """
-        self._issues_index.pop(tracked_id)
+        if issue_id in self._issues_index.keys():
+            self._issues_index.pop(issue_id)
 
     def read_issue(self, id_):
         """Read issue by it's URL.
