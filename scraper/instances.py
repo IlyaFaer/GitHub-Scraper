@@ -26,7 +26,7 @@ class Columns:
             self._gen_size_request(index, col)
             self._gen_align_request(index, col)
             self._gen_one_of_request(index, col)
-            self._gen_color_requests(index, col)
+            self._gen_color_request(index, col)
             self._gen_date_type_request(index, col)
 
             self.fill_funcs[col["name"]] = col.get("fill_func", dont_fill)
@@ -133,7 +133,7 @@ class Columns:
 
             self._requests.append(request)
 
-    def _gen_color_requests(self, index, col):
+    def _gen_color_request(self, index, col):
         """Requests to set color for specific values in cell.
 
         Args:

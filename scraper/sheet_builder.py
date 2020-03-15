@@ -6,7 +6,7 @@ import datetime
 import logging
 from github import Github
 from pr_index import PullRequestsIndex
-from utils import try_match_keywords, parse_url
+from utils import try_match_keywords, parse_url, log_progress
 
 
 class SheetBuilder:
@@ -52,9 +52,7 @@ class SheetBuilder:
             )
             self.prs_index.index_closed_prs(repo)
 
-            if repo_name not in self._last_issue_updates.keys():
-                self._last_issue_updates[repo_name] = (datetime.datetime(1, 1, 1), "")
-                is_first_update = True
+            is_first_update = self._is_first_update(repo_name)
 
             # process issues of the repo
             issues = repo.get_issues(**self._build_filter(repo_name))
@@ -76,14 +74,9 @@ class SheetBuilder:
                         issue.updated_at,
                         issue.html_url,
                     )
-                # log progress if repo is too big
-                if is_first_update and issues.totalCount > 1600:
-                    if (index + 1) % 400 == 0:
-                        logging.info(
-                            "processed {num} of {total} issues".format(
-                                num=index + 1, total=issues.totalCount
-                            )
-                        )
+
+                log_progress(is_first_update, issues.totalCount, index, "issues")
+
             logging.info("{repo}: issues processed".format(repo=repo.full_name))
 
         self._issues_index.update(updated_issues)
@@ -151,6 +144,24 @@ class SheetBuilder:
                 specified issue.
         """
         return self.prs_index.get_related_prs(issue_id)
+
+    def _is_first_update(self, repo_name):
+        """Check if the is the first repo update.
+
+        If True, add init date into updates index.
+
+        Args:
+            repo_name (str): Repository name.
+
+        Returns:
+            bool:
+                True, if this is the first repo update,
+                False otherwise.
+        """
+        if repo_name not in self._last_issue_updates.keys():
+            self._last_issue_updates[repo_name] = (datetime.datetime(1, 1, 1), "")
+            return True
+        return False
 
     def _build_filter(self, repo_name):
         """Build filter for get_issue() call.

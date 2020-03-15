@@ -3,8 +3,9 @@
 Create your own main.py to use Scraper.
 Your main.py will not be Git-tracked.
 
-It creates Google spreadsheet and then
-updates it at the specified interval.
+It creates Google spreadsheet and fills
+it with the specified repositories
+data at the specified intervals.
 """
 import time
 import config

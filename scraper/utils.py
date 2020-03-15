@@ -1,4 +1,5 @@
 """Some utils for tracker."""
+import logging
 from reg_exps import NUM_REGEX, PATTERNS
 
 
@@ -101,3 +102,21 @@ def try_match_keywords(body):
         for pattern in PATTERNS:
             result += pattern.findall(body)
     return result
+
+
+def log_progress(is_first_update, total, current, message):
+    """Log progress of the issues or PRs processing.
+
+    Args:
+        is_first_update (bool): This is the first update of this repo.
+        total (int): Number of issues/PRs.
+        current (int): Last processed issue/PR number.
+        message (str): String with the processed object instance.
+    """
+    if is_first_update and total > 1600:
+        if (current + 1) % 400 == 0:
+            logging.info(
+                "processed {num} of {total} {message}".format(
+                    num=current + 1, total=total, message=message
+                )
+            )

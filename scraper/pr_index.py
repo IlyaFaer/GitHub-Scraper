@@ -4,7 +4,7 @@ and indexating.
 """
 import datetime
 import logging
-from utils import try_match_keywords
+from utils import try_match_keywords, log_progress
 
 
 class PullRequestsIndex(dict):
@@ -60,13 +60,8 @@ class PullRequestsIndex(dict):
                 for key_phrase in try_match_keywords(pull.body):
                     self.add(repo.html_url, pull, key_phrase)
 
-                if is_first_update and pulls.totalCount > 1600:
-                    if (index + 1) % 400 == 0:
-                        logging.info(
-                            "processed {num} of {total} pull requests".format(
-                                num=index + 1, total=pulls.totalCount
-                            )
-                        )
+                log_progress(is_first_update, pulls.totalCount, index, "pull requests")
+
             self._last_pr_updates[repo.full_name] = pulls[0].updated_at
             logging.info(
                 "{repo}: all pull requests indexed".format(repo=repo.full_name)

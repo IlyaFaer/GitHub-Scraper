@@ -304,7 +304,7 @@ def _build_index(table, column_names):
 
 
 def _gen_color_request(sheet_id, row, column, color):
-    """Request, that changes color of specified cell.
+    """Request to change color of the specified cell.
 
     Args:
         sheet_id (int): Numeric sheet id.

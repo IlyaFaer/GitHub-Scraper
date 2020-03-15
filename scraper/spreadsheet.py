@@ -16,7 +16,7 @@ logging.basicConfig(
 class Spreadsheet:
     """Object related to a concrete Google spreadsheet.
 
-    Uses `config` attr to update spreasheet structure.
+    Uses `config` attr to designate spreasheet structure.
     Requires manual configurations reloading.
 
     Args:
