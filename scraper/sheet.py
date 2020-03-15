@@ -70,9 +70,27 @@ class Sheet:
             return
 
         tracked_issues = self._read(ss_resource)
+        self._merge_tables(tracked_issues, updated_issues)
 
+        self._insert_new_issues(tracked_issues, updated_issues)
+        new_table, requests = self._prepare_table(tracked_issues.values())
+
+        self._format(ss_resource)
+        self._insert(ss_resource, new_table, "A2")
+
+        self._clear_bottom(ss_resource, len(tracked_issues), len(self._columns.names))
+        self._post_requests(ss_resource, requests)
+        self._builder.first_update = False
+
+    def _merge_tables(self, tracked_issues, updated_issues):
+        """Merged new data into the old table.
+
+        Args:
+            tracked_issues (dict): Issues loaded from the table.
+            updated_issues (dict): Recently update issues.
+        """
         to_be_deleted = []
-        # merging the new table into the old one
+
         for issue_id in tracked_issues.keys():
             issue_obj = self._spot_issue_object(issue_id, updated_issues)
 
@@ -98,16 +116,6 @@ class Sheet:
         for id_ in to_be_deleted:
             tracked_issues.pop(id_)
             self._builder.delete_from_index(id_)
-
-        self._insert_new_issues(tracked_issues, updated_issues)
-        new_table, requests = self._prepare_table(tracked_issues.values())
-
-        self._format(ss_resource)
-        self._insert(ss_resource, new_table, "A2")
-
-        self._clear_bottom(ss_resource, len(tracked_issues), len(self._columns.names))
-        self._post_requests(ss_resource, requests)
-        self._builder.first_update = False
 
     def _spot_issue_object(self, id_, updated_issues):
         """Designate issue object.
