@@ -4,9 +4,13 @@ them into convenient structures.
 """
 import datetime
 import logging
-from github import Github
+import os.path
+import github
 from pr_index import PullRequestsIndex
 from utils import try_match_keywords, parse_url, log_progress
+
+
+LOGIN_PASS_FILE = "loginpas.txt"
 
 
 class SheetBuilder:
@@ -187,11 +191,40 @@ class SheetBuilder:
         return args
 
     def _login_on_github(self):
-        """Authenticate on GitHub."""
-        with open("loginpas.txt") as login_file:
+        """Authenticate on GitHub.
+
+        Returns:
+            github.MainClass.Github: Client object authenticated on GitHub.
+        """
+        if not os.path.exists(LOGIN_PASS_FILE):
+            self._ask_credentials()
+
+        with open(LOGIN_PASS_FILE) as login_file:
             login, password = login_file.read().strip().split("/")
 
-        return Github(login, password)
+        client = github.Github(login, password)
+        # check credentials with a simple read request
+        try:
+            client.get_user(login)
+        except github.BadCredentialsException:
+            print("Incorrect credentials exception occurred!")
+            self._ask_credentials()
+            client = self._login_on_github()
+
+        return client
+
+    def _ask_credentials(self):
+        """Ask user for GitHub login and password.
+
+        Login and password entered through console will
+        be written into text file for future use.
+        """
+        print("Enter GitHub login to be used for Scraper: ")
+        login = input()
+        print("Enter the password:")
+        password = input()
+        with open(LOGIN_PASS_FILE, "w") as login_file:
+            login_file.write(login + "/" + password)
 
     def _process_issue(self, issue, updated_issues):
         """If issue is PR, indexate it. Add into updated index otherwise.
