@@ -28,7 +28,7 @@ Scraper uses *config.py* as a source of preferences. Before update it reloads *c
 To make Scraper detect PRs, use GitHub keywords "Towards", "Closes", "Fixes" to make link from PRs body to the original issue. Scraper will use these links to fill "Public PR" field in the related issues.  
 
 **Credentials**  
-On a first Scraper launch you'll have to authenticate on Google Sheets API (you'll see appropriate popup-window) and on GitHub (with a console). On a subsequent launches Scraper will use previous credentials without asking to enter them once again.
+On a first Scraper launch you'll have to authenticate on Google Sheets API (you'll see appropriate popup-window) and on GitHub (with a console). On subsequent launches Scraper will use previous credentials without asking to enter them once again.
 
 **Beta version disclaimer**  
 Scraper is in a state of active development yet. Please, use Releases as the most stable versions, and feel free to open an issue in case of any problems.
