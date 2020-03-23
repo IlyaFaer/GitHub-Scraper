@@ -3,6 +3,9 @@ __pycache__/
 config.py
 credentials.json
 fill_funcs.py
+last_updates.bak
+last_updates.dat
+last_updates.dir
 launch.json
 loginpas.txt
 logs.txt

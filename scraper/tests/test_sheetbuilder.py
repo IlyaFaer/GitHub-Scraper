@@ -9,7 +9,7 @@ class TestSheetBuilder(unittest.TestCase):
         Check if filter built correctly in case of no updates
         were made for specified repository.
         """
-        builder = SheetBuilderMock()
+        builder = SheetBuilderMock("sheet_name")
         builder._last_issue_updates = {"repo1": (datetime.datetime(1, 1, 1), "")}
 
         self.assertEqual(builder._build_filter("repo1"), {})
@@ -18,7 +18,7 @@ class TestSheetBuilder(unittest.TestCase):
         """Check if filter build correctly."""
         DATE_ = datetime.datetime(2020, 6, 3)
 
-        builder = SheetBuilderMock()
+        builder = SheetBuilderMock("sheet_name")
         builder._last_issue_updates = {"repo1": (DATE_, "issue_url")}
 
         self.assertEqual(
@@ -30,7 +30,7 @@ class TestSheetBuilder(unittest.TestCase):
         """Check if configurations reloading working fine."""
         REPOS = ("repo1", "repo2")
 
-        builder = SheetBuilderMock()
+        builder = SheetBuilderMock("sheet_name")
         builder.reload_config({"repo_names": REPOS})
 
         self.assertEqual(builder._repo_names, REPOS)
@@ -40,7 +40,7 @@ class TestSheetBuilder(unittest.TestCase):
         ISSUE1 = {"Title": "Issue title", "Number": 1}
         URL = "url1"
 
-        builder = SheetBuilderMock()
+        builder = SheetBuilderMock("sheet_name")
         builder._issues_index = {URL: ISSUE1}
 
         self.assertEqual(builder.get_from_index("url"), None)
@@ -51,7 +51,7 @@ class TestSheetBuilder(unittest.TestCase):
         ISSUE1 = {"Title": "Issue title", "Number": 1}
         URL = "url1"
 
-        builder = SheetBuilderMock()
+        builder = SheetBuilderMock("sheet_name")
         builder._issues_index = {URL: ISSUE1}
 
         builder.delete_from_index(URL)

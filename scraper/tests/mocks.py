@@ -19,7 +19,7 @@ class SheetMock(Sheet):
         self.name = name
         self.ss_id = spreadsheet_id
         self._config = None
-        self._builder = SheetBuilderMock()
+        self._builder = SheetBuilderMock(name)
 
 
 class ConfigMock:

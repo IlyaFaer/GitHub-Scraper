@@ -21,7 +21,7 @@ class Sheet:
         self.name = name
         self.ss_id = spreadsheet_id
         self._config = None
-        self._builder = sheet_builder.SheetBuilder()
+        self._builder = sheet_builder.SheetBuilder(name)
 
     @property
     def create_request(self):

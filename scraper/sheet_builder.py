@@ -2,9 +2,11 @@
 Utils for reading data from GitHub and building
 them into convenient structures.
 """
+import copy
 import datetime
 import logging
 import os.path
+import shelve
 import github
 from pr_index import PullRequestsIndex
 from utils import try_match_keywords, parse_url, log_progress
@@ -21,11 +23,12 @@ class SheetBuilder:
     to be tracked by this builder, will be shown on this sheet.
     """
 
-    def __init__(self):
+    def __init__(self, sheet_name):
         self._repos = {}  # repos tracked by this builder
         self._repo_names = {}
+        self._sheet_name = sheet_name
         # time and id of the issues last updated in the repos
-        self._last_issue_updates = {}
+        self._last_issue_updates = self._load_update_stamps(sheet_name)
         # dict in which we aggregate all of the issue objects
         # used to avoid re-reading unupdated issues from GitHub
         self._issues_index = {}
@@ -83,6 +86,12 @@ class SheetBuilder:
 
             logging.info("{repo}: issues processed".format(repo=repo.full_name))
 
+        with shelve.open("last_updates", "w") as lasts_file:
+            old_updates = copy.copy(lasts_file["last_issue_updates"])
+            old_updates[self._sheet_name] = self._last_issue_updates
+
+            lasts_file["last_issue_updates"] = old_updates
+
         self._issues_index.update(updated_issues)
         return updated_issues
 
@@ -120,7 +129,11 @@ class SheetBuilder:
         if not repo:
             return
 
-        issue = repo.get_issue(int(issue_num))
+        try:
+            issue = repo.get_issue(int(issue_num))
+        except github.UnknownObjectException:
+            return None
+
         self._issues_index[issue.html_url] = issue
 
         if issue.updated_at > self._last_issue_updates[repo_name][0]:
@@ -166,6 +179,20 @@ class SheetBuilder:
             self._last_issue_updates[repo_name] = (datetime.datetime(1, 1, 1), "")
             return True
         return False
+
+    def _load_update_stamps(self, sheet_name):
+        """Load last issues update timestamps from the file.
+
+        Args:
+            sheet_name (str): Name of the sheet.
+
+        Returns:
+            dict:
+                Index of the last issue update timestamps
+                for every repo on this sheet.
+        """
+        with shelve.open("last_updates", "c") as lasts_file:
+            return lasts_file.setdefault("last_issue_updates", {}).get(sheet_name, {})
 
     def _build_filter(self, repo_name):
         """Build filter for get_issue() call.
