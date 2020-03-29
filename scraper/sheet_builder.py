@@ -2,14 +2,18 @@
 Utils for reading data from GitHub and building
 them into convenient structures.
 """
-import copy
 import datetime
 import logging
 import os.path
-import shelve
 import github
 from pr_index import PullRequestsIndex
-from utils import try_match_keywords, parse_url, log_progress
+from utils import (
+    try_match_keywords,
+    parse_url,
+    log_progress,
+    load_update_stamps,
+    save_update_stamps,
+)
 
 
 LOGIN_PASS_FILE = "loginpas.txt"
@@ -28,13 +32,13 @@ class SheetBuilder:
         self._repo_names = {}
         self._sheet_name = sheet_name
         # time and id of the issues last updated in the repos
-        self._last_issue_updates = self._load_update_stamps(sheet_name)
+        self._last_issue_updates = load_update_stamps("last_issue_updates", sheet_name)
         # dict in which we aggregate all of the issue objects
         # used to avoid re-reading unupdated issues from GitHub
         self._issues_index = {}
         self._gh_client = self._login_on_github()
 
-        self.prs_index = PullRequestsIndex()
+        self.prs_index = PullRequestsIndex(sheet_name)
         self.first_update = True
 
     def retrieve_updated(self):
@@ -50,7 +54,6 @@ class SheetBuilder:
                 Issues index in format:
                 {issue.html_url: github.Issue.Issue}
         """
-        is_first_update = False
         updated_issues = {}
 
         for repo_name in self._repo_names.keys():
@@ -61,11 +64,10 @@ class SheetBuilder:
 
             is_first_update = self._is_first_update(repo_name)
 
-            # process issues of the repo
-            issues = repo.get_issues(**self._build_filter(repo_name))
             logging.info("{repo}: processing issues".format(repo=repo.full_name))
+            issues = repo.get_issues(**self._build_filter(repo_name))
 
-            for index, issue in enumerate(issues):
+            for ind, issue in enumerate(issues):
                 # "since" filter returns the issue, which was
                 # the last updated in previous filling - skip it
                 if (
@@ -82,15 +84,14 @@ class SheetBuilder:
                         issue.html_url,
                     )
 
-                log_progress(is_first_update, issues.totalCount, index, "issues")
+                log_progress(is_first_update, issues.totalCount, ind, "issues")
 
             logging.info("{repo}: issues processed".format(repo=repo.full_name))
 
-        with shelve.open("last_updates", "w") as lasts_file:
-            old_updates = copy.copy(lasts_file["last_issue_updates"])
-            old_updates[self._sheet_name] = self._last_issue_updates
-
-            lasts_file["last_issue_updates"] = old_updates
+        save_update_stamps(
+            "last_issue_updates", self._sheet_name, self._last_issue_updates
+        )
+        self.prs_index.save_updates()
 
         self._issues_index.update(updated_issues)
         return updated_issues
@@ -179,20 +180,6 @@ class SheetBuilder:
             self._last_issue_updates[repo_name] = (datetime.datetime(1, 1, 1), "")
             return True
         return False
-
-    def _load_update_stamps(self, sheet_name):
-        """Load last issues update timestamps from the file.
-
-        Args:
-            sheet_name (str): Name of the sheet.
-
-        Returns:
-            dict:
-                Index of the last issue update timestamps
-                for every repo on this sheet.
-        """
-        with shelve.open("last_updates", "c") as lasts_file:
-            return lasts_file.setdefault("last_issue_updates", {}).get(sheet_name, {})
 
     def _build_filter(self, repo_name):
         """Build filter for get_issue() call.

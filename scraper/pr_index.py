@@ -4,7 +4,12 @@ and indexating.
 """
 import datetime
 import logging
-from utils import try_match_keywords, log_progress
+from utils import (
+    try_match_keywords,
+    log_progress,
+    load_update_stamps,
+    save_update_stamps,
+)
 
 
 class PullRequestsIndex(dict):
@@ -13,12 +18,18 @@ class PullRequestsIndex(dict):
     Index is built this way:
         <issue URL>:
             [<PR related to this issue>, <PR related to this issue>...]
+
+    Args:
+        sheet_name (str):
+            Name of the sheet, for which
+            this index is assumed to be used.
     """
 
-    def __init__(self):
+    def __init__(self, sheet_name):
         super().__init__()
+        self._sheet_name = sheet_name
         # time when any PR was last updated in specific repo
-        self._last_pr_updates = {}
+        self._last_pr_updates = load_update_stamps("last_pr_updates", sheet_name)
 
     def get_related_prs(self, issue_id):
         """Get PRs related to the given issue.
@@ -43,10 +54,10 @@ class PullRequestsIndex(dict):
         Args:
             repo (github.Repository.Repository): Repository object.
         """
-        is_first_update = False
         pulls = repo.get_pulls(state="closed", sort="updated", direction="desc")
 
         if pulls.totalCount:
+            is_first_update = False
             logging.info("{repo}: indexing pull requests".format(repo=repo.full_name))
 
             for index, pull in enumerate(pulls):
@@ -66,6 +77,10 @@ class PullRequestsIndex(dict):
             logging.info(
                 "{repo}: all pull requests indexed".format(repo=repo.full_name)
             )
+
+    def save_updates(self):
+        """Save last PRs update timestamps into file."""
+        save_update_stamps("last_pr_updates", self._sheet_name, self._last_pr_updates)
 
     def add(self, repo_url, lpr, key_exp):
         """Add PR object into index or update it."""

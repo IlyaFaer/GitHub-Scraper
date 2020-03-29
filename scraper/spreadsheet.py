@@ -23,7 +23,6 @@ class Spreadsheet:
         config (module):
             Imported config.py module with all of the
             spreadsheet preferences.
-
         id_ (str):
             Id of the related spreadsheet. If not given,
             new spreadsheet will be created on object init.
@@ -60,7 +59,7 @@ class Spreadsheet:
         Args:
             force (bool):
                 If True, structure will be updated whether
-                configuration updated or not.
+                configuration were updated or not.
         """
         if not (self._config_updated or force):
             return

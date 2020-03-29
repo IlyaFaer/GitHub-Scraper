@@ -156,7 +156,6 @@ class Sheet:
             last_sym=string.ascii_uppercase[len(rows[0]) - 1],
             count=len(rows) + start_index + 1,
         )
-
         ss_resource.values().update(
             spreadsheetId=self.ss_id,
             range=self.name + "!" + sym_range,
