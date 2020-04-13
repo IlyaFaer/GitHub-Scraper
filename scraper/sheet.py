@@ -1,5 +1,6 @@
 """API which controls single Google Sheet."""
 import string
+import github
 import fill_funcs
 import sheet_builder
 from reg_exps import DIGITS_PATTERN
@@ -92,7 +93,11 @@ class Sheet:
         to_be_deleted = []
 
         for issue_id in tracked_issues.keys():
-            issue_obj = self._spot_issue_object(issue_id, updated_issues)
+            try:
+                issue_obj = self._spot_issue_object(issue_id, updated_issues)
+            except github.UnknownObjectException:
+                to_be_deleted.append(issue_id)
+                continue
 
             prs = self._builder.get_related_prs(issue_id)
             if issue_obj:

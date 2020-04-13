@@ -130,10 +130,7 @@ class SheetBuilder:
         if not repo:
             return
 
-        try:
-            issue = repo.get_issue(int(issue_num))
-        except github.UnknownObjectException:
-            return None
+        issue = repo.get_issue(int(issue_num))
 
         self._issues_index[issue.html_url] = issue
 
