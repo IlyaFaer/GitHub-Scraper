@@ -117,7 +117,7 @@ class SheetBuilder:
             self._issues_index.pop(issue_id)
 
     def read_issue(self, id_):
-        """Read issue by it's URL.
+        """Read issue by its URL.
 
         Args:
             id_ (str): Issue HTML URL.

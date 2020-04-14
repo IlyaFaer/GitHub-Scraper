@@ -84,27 +84,27 @@ class Sheet:
         self._builder.first_update = False
 
     def _merge_tables(self, tracked_issues, updated_issues):
-        """Merged new data into the old table.
+        """Merge new data into the table read from the sheet.
 
         Args:
-            tracked_issues (dict): Issues loaded from the table.
+            tracked_issues (dict): Issues loaded from the sheet.
             updated_issues (dict): Recently update issues.
         """
         to_be_deleted = []
 
-        for issue_id in tracked_issues.keys():
+        for id_ in tracked_issues.keys():
             try:
-                issue_obj = self._spot_issue_object(issue_id, updated_issues)
+                issue_obj = self._spot_issue_object(id_, updated_issues)
             except github.UnknownObjectException:
-                to_be_deleted.append(issue_id)
+                to_be_deleted.append(id_)
                 continue
 
-            prs = self._builder.get_related_prs(issue_id)
+            prs = self._builder.get_related_prs(id_)
             if issue_obj:
                 # update columns using fill function
                 for col in self._columns.names:
                     self._columns.fill_funcs[col](
-                        tracked_issues[issue_id],
+                        tracked_issues[id_],
                         issue_obj,
                         self.name,
                         self._config,
@@ -112,11 +112,9 @@ class Sheet:
                         False,
                     )
 
-                to_del = fill_funcs.to_be_deleted(
-                    tracked_issues[issue_id], issue_obj, prs
-                )
+                to_del = fill_funcs.to_be_deleted(tracked_issues[id_], issue_obj, prs)
                 if to_del:
-                    to_be_deleted.append(issue_id)
+                    to_be_deleted.append(id_)
 
         for id_ in to_be_deleted:
             tracked_issues.pop(id_)

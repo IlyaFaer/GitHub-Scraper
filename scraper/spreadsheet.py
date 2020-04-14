@@ -16,7 +16,7 @@ logging.basicConfig(
 class Spreadsheet:
     """Object related to a concrete Google spreadsheet.
 
-    Uses `config` attr to designate spreasheet structure.
+    Uses `config` attr to designate spreadsheet structure.
     Requires manual configurations reloading.
 
     Args:
@@ -44,7 +44,11 @@ class Spreadsheet:
 
     @id.setter
     def id(self, value):
-        """Spreadsheet id setter."""
+        """Spreadsheet id setter.
+
+        Args:
+            value (Any): New attribute value.
+        """
         raise AttributeError(
             "Spreadsheet id can't be changed. Initiate another Spreadsheet() object."
         )
@@ -110,7 +114,7 @@ class Spreadsheet:
             config (module):
                 Imported config.py module with preferences.
         """
-        # reload configurations and filling functions
+        # reload configurations and filling functions modules
         config.fill_funcs = importlib.reload(config.fill_funcs)
         config = importlib.reload(config)
 
@@ -126,7 +130,7 @@ class Spreadsheet:
             self._last_config_update = config_update
 
     def _init_sheets(self):
-        """Init Sheet object for every sheet in this spreadsheet.
+        """Init Sheet() object for every sheet in this spreadsheet.
 
         Returns:
             dict: {<sheet_name>: <sheet.Sheet>} - sheets index.
@@ -222,7 +226,7 @@ class Spreadsheet:
 
 
 def _gen_sheets_struct(sheets_config):
-    """Build dicts with the sheet preferences.
+    """Build dicts with the sheets preferences.
 
     Args:
         sheets_config (dict): Sheets preferences.
