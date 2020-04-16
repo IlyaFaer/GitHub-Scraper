@@ -90,19 +90,36 @@ def build_url_formula(issue):
     return url
 
 
-def try_match_keywords(body):
+def try_match_keywords(body, repo_names):
     """Try to find GitHub keywords in issue's body.
 
     Args:
         body (str): Issue's body.
+        repo_names (tuple): Tracked repositories names.
 
     Returns:
         list: Key phrases with issue numbers, if found.
     """
     result = []
     if body:
+        # check if there are keywords declaring
+        # relation to another object in this repo
         for pattern in PATTERNS:
             result += pattern.findall(body)
+
+        # check if there are keywords declaring
+        # relation to another object in another
+        # repo of this sheet
+        for repo_name in repo_names:
+            for keyword in ("Closes", "Fixes", "Towards"):
+                link = keyword + " " + repo_name + "#"
+
+                if link in body:
+                    start_ind = body.index(link)
+                    parts = body[start_ind:].split()
+                    result += [
+                        parts[0] + " " + parts[1],
+                    ]
     return result
 
 

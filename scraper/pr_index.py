@@ -44,7 +44,7 @@ class PullRequestsIndex(dict):
         prs.sort(key=sort_pull_requests, reverse=True)
         return prs
 
-    def index_closed_prs(self, repo):
+    def index_closed_prs(self, repo, repo_names):
         """Add closed pull requests into index.
 
         Method remembers last PR's update time and doesn't
@@ -53,6 +53,7 @@ class PullRequestsIndex(dict):
 
         Args:
             repo (github.Repository.Repository): Repository object.
+            repo_names (tuple): All tracked repos names.
         """
         pulls = repo.get_pulls(state="closed", sort="updated", direction="desc")
 
@@ -68,7 +69,7 @@ class PullRequestsIndex(dict):
                 if pull.updated_at < self._last_pr_updates[repo.full_name]:
                     break
 
-                for key_phrase in try_match_keywords(pull.body):
+                for key_phrase in try_match_keywords(pull.body, repo_names):
                     self.add(repo.html_url, pull, key_phrase)
 
                 log_progress(is_first_update, pulls.totalCount, index, "pull requests")
@@ -85,6 +86,11 @@ class PullRequestsIndex(dict):
     def add(self, repo_url, lpr, key_exp):
         """Add PR object into index or update it."""
         issue_num = key_exp.split("#")[1]
+
+        if "/" in key_exp:  # external repo
+            repo_name = key_exp.split()[1].split("#")[0]
+            repo_url = "https://github.com/" + repo_name
+
         issue_url = repo_url + "/issues/" + issue_num
         if issue_url not in self:
             self[issue_url] = []

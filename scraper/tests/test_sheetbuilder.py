@@ -28,12 +28,12 @@ class TestSheetBuilder(unittest.TestCase):
 
     def test_reload_config(self):
         """Check if configurations reloading working fine."""
-        REPOS = ("repo1", "repo2")
+        REPOS = {"repo1": "repo1_full_name", "repo2": "repo2_full_name"}
 
         builder = SheetBuilderMock("sheet_name")
         builder.reload_config({"repo_names": REPOS})
 
-        self.assertEqual(builder._repo_names, REPOS)
+        self.assertEqual(builder._repo_names, tuple(REPOS.keys()))
 
     def test_get_from_index(self):
         """Test getting issues from index."""

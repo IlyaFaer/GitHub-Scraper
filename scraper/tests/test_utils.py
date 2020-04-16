@@ -51,10 +51,16 @@ class TestUtilFunctions(unittest.TestCase):
 
     def test_match_keywords(self):
         """Check matching the GitHub keywords."""
-        self.assertEqual(utils.try_match_keywords(""), [])
+        self.assertEqual(utils.try_match_keywords("", ()), [])
 
-        result = utils.try_match_keywords("Some text. Closes #135")
+        result = utils.try_match_keywords("Some text. Closes #135", ())
         self.assertEqual(result, ["Closes #135"])
+
+        # keyword with external relation
+        result = utils.try_match_keywords(
+            "Some text. Closes test_org/test_repo#12", ("test_org/test_repo",)
+        )
+        self.assertEqual(result, ["Closes test_org/test_repo#12"])
 
     def test_url_from_formula(self):
         """Check if getting URL from HYPERLINK formula is OK."""

@@ -29,7 +29,7 @@ class SheetBuilder:
 
     def __init__(self, sheet_name):
         self._repos = {}  # repos tracked by this builder
-        self._repo_names = {}
+        self._repo_names = ()
         self._sheet_name = sheet_name
         # time and id of the issues last updated in the repos
         self._last_issue_updates = load_update_stamps("last_issue_updates", sheet_name)
@@ -56,11 +56,11 @@ class SheetBuilder:
         """
         updated_issues = {}
 
-        for repo_name in self._repo_names.keys():
+        for repo_name in self._repo_names:
             repo = self._repos.setdefault(
                 repo_name, self._gh_client.get_repo(repo_name)
             )
-            self.prs_index.index_closed_prs(repo)
+            self.prs_index.index_closed_prs(repo, self._repo_names)
 
             is_first_update = self._is_first_update(repo_name)
 
@@ -145,7 +145,7 @@ class SheetBuilder:
         Args:
             config (dict): Dict with sheet configurations.
         """
-        self._repo_names = config["repo_names"]
+        self._repo_names = tuple(config["repo_names"].keys())
 
     def get_related_prs(self, issue_id):
         """Return pull requests of the specified issue.
@@ -249,7 +249,7 @@ class SheetBuilder:
             return
 
         # issue is pull request - indexate it
-        for key_phrase in try_match_keywords(issue.body):
+        for key_phrase in try_match_keywords(issue.body, self._repo_names):
             self.prs_index.add(
                 issue.repository.html_url, issue.as_pull_request(), key_phrase
             )
