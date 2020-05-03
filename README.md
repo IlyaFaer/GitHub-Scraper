@@ -27,6 +27,9 @@ Scraper uses *config.py* as a source of preferences. Before update it reloads *c
 **PR autodetection**  
 To make Scraper detect PRs, use GitHub keywords "Towards", "Closes", "Fixes" to make link from PRs body to the original issue. Scraper will use these links to fill "Public PR" field in the related issues.  
 
+**Archive**  
+By default, Scraper moves issues with `Done` status into Archive sheet and stops tracking them. This feature allows to avoid overwhelming sheets with non-active data. The behavior can be changed by setting `ARCHIVE_SHEET` configurations and `to_be_archived` filling function.  
+
 **Credentials**  
 On a first Scraper launch you'll have to authenticate on Google Sheets API (you'll see appropriate popup-window) and on GitHub (with a console). On subsequent launches Scraper will use previous credentials without asking to enter them once again.
 
