@@ -54,7 +54,7 @@ class TestSpreadsheet(unittest.TestCase):
                 "spreadsheet.Spreadsheet._create", return_value=SPREADSHEET_ID
             ) as create_mock:
                 with mock.patch(
-                    "spreadsheet.Spreadsheet._init_sheets", return_value=SHEETS
+                    "spreadsheet.Spreadsheet._init_existing_sheets", return_value=SHEETS
                 ) as init_sheets_mock:
                     doc = spreadsheet.Spreadsheet(CONFIG)
 
@@ -79,7 +79,7 @@ class TestSpreadsheet(unittest.TestCase):
                 "spreadsheet.Spreadsheet._create", return_value=SPREADSHEET_ID
             ) as create_ss:
                 with mock.patch(
-                    "spreadsheet.Spreadsheet._init_sheets", return_value=SHEETS
+                    "spreadsheet.Spreadsheet._init_existing_sheets", return_value=SHEETS
                 ) as init_sheets_mock:
                     doc = spreadsheet.Spreadsheet(CONFIG, SPREADSHEET_ID)
                     init_sheets_mock.assert_called_once()
@@ -205,7 +205,7 @@ class TestSpreadsheet(unittest.TestCase):
 
             # no spreadsheet resource used in
             # this test, so args will be None
-            update_sheet.assert_has_calls((mock.call(None), mock.call(None)))
+            update_sheet.assert_has_calls((mock.call(None, {}), mock.call(None, {})))
 
     def test_reload_config(self):
         """Test reloading the spreadsheet configurations."""
@@ -233,7 +233,7 @@ class TestSpreadsheet(unittest.TestCase):
                 self._ss_mock.reload_config(new_config)
                 sheet_reload_mock.assert_not_called()
 
-    def test_init_sheets(self):
+    def test_init_existing_sheets(self):
         SHEET1 = "sheet1"
         SHEET2 = "sheet2"
         SHEET1_ID = 6345345
@@ -253,7 +253,7 @@ class TestSpreadsheet(unittest.TestCase):
         ss_mock._ss_resource = mock.Mock(get=get_mock)
 
         with mock.patch("sheet_builder.SheetBuilder", return_value=SheetBuilderMock):
-            sheets = ss_mock._init_sheets()
+            sheets = ss_mock._init_existing_sheets()
         self.assertEqual(sheets[SHEET1].id, SHEET1_ID)
         self.assertEqual(sheets[SHEET1].name, SHEET1)
 

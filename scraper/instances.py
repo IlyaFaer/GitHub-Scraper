@@ -238,16 +238,24 @@ class Row(dict):
         for col in column_names:
             self[col] = ""
 
-    @property
-    def as_list(self):
-        """Return list representation of row.
+    def as_list(self, columns=None):
+        """Return list representation of this row.
+
+        Columns can be set with columns arg. Otherwise
+        list of columns will be taken from the row itself.
+
+        Args:
+            columns (Columns):
+                Object to designate columns and their
+                order while conversion into list().
 
         Returns:
-            list: List with column values for the row.
+            list: List prepared for insertion into sheet.
         """
         row = []
+        col_names = columns.names if columns is not None else self._column_names
         if any(self.values()):
-            for name in self._column_names:
+            for name in col_names:
                 row.append(self[name])
         return row
 

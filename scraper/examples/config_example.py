@@ -194,6 +194,7 @@ SHEETS = {
         "repo_names": {
             "googleapis/google-cloud-go": "Cloud",
             "googleapis/google-api-go-client": "ApiClient",
+            "GoogleCloudPlatform/golang-samples": "Samples",
         },
         "columns": GO_COLUMNS,
     },
@@ -276,4 +277,24 @@ SHEETS = {
         },
         "columns": JAVA_COLUMNS,
     },
+}
+
+
+# TODO: set archive sheet configrations
+# set to {} in case if no archive needed
+ARCHIVE_SHEET = {
+    "name": "Archive",
+    "columns": [
+        {"name": "Sheet", "align": "CENTER"},
+        {"name": "Archived", "align": "CENTER", "type": "date"},
+        {"name": "Issue", "width": 50, "align": "CENTER", "type": "link"},
+        {"name": "Created", "align": "CENTER", "type": "date"},
+        {"name": "Description", "width": 450},
+        {"name": "Repository", "align": "CENTER"},
+        {"name": "Project", "align": "CENTER"},
+        {"name": "Assignee", "align": "CENTER"},
+        {"name": "Public PR", "align": "CENTER", "type": "link"},
+        {"name": "Task", "align": "CENTER"},
+        {"name": "Comment", "width": 550},
+    ],
 }

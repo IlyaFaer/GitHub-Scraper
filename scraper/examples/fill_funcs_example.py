@@ -205,6 +205,20 @@ def to_be_ignored(issue):
     return False
 
 
+def to_be_archived(row):
+    """Condition function to designate if issue should be archived.
+
+    Args:
+        row (dict): Row to be checked.
+
+    Returns:
+        bool: True if issue should archived, False otherwise.
+    """
+    if row["Priority"] == "Done":
+        return True
+    return False
+
+
 def sort_func(row):
     """Sorts data within single one sheet.
 
@@ -212,6 +226,15 @@ def sort_func(row):
         row (dict): Dict representation of a single row.
     """
     return row["Repository"], row["Project"], int(get_num_from_formula(row["Issue"]))
+
+
+def archive_sort_func(row):
+    """Sorts data in archive sheet.
+
+    Args:
+        row (dict): Dict representation of a single row.
+    """
+    return row["Sheet"], row["Project"], int(get_num_from_formula(row["Issue"]))
 
 
 def _designate_status_color(pull, team):

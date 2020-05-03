@@ -53,7 +53,7 @@ class PullRequestsIndex(dict):
 
         Args:
             repo (github.Repository.Repository): Repository object.
-            repo_names (tuple): All tracked repos names.
+            repo_names (tuple): All tracked on this sheet repos names.
         """
         pulls = repo.get_pulls(state="closed", sort="updated", direction="desc")
 

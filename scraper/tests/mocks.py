@@ -30,6 +30,7 @@ class ConfigMock:
         self.TITLE = "MockTitle"
         self.__file__ = 0
         self.fill_funcs = examples.fill_funcs_example
+        self.ARCHIVE_SHEET = {}
 
 
 class SpreadsheetMock(spreadsheet.Spreadsheet):
@@ -46,6 +47,8 @@ class SpreadsheetMock(spreadsheet.Spreadsheet):
         self._last_config_update = -1
         self._ss_resource = None
         self._config_updated = True
+        self._to_be_archived = {}
+        self._archive = None
 
 
 def return_module(module):

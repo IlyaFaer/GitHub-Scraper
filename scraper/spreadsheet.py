@@ -3,7 +3,7 @@ import importlib
 import logging
 import os.path
 import auth
-from sheet import Sheet
+from sheet import Sheet, ArchiveSheet
 
 
 logging.basicConfig(
@@ -32,10 +32,16 @@ class Spreadsheet:
         self._last_config_update = 0
         self._config_updated = False
         self._config = config
+        self._archive = None
+        self._to_be_archived = {}
 
         self._ss_resource = auth.authenticate()
         self._id = id_ or self._create()
-        self.sheets = self._init_sheets()
+        self.sheets = self._init_existing_sheets()
+        if self._config.ARCHIVE_SHEET and not self._archive:
+            self._archive = ArchiveSheet(
+                config.ARCHIVE_SHEET["name"], self.id, is_new=True
+            )
 
     @property
     def id(self):
@@ -99,10 +105,19 @@ class Spreadsheet:
         for sheet_name, sheet in self.sheets.items():
             logging.info("Updating sheet " + sheet_name)
             try:
-                sheet.update(self._ss_resource)
+                sheet.update(self._ss_resource, self._to_be_archived)
                 logging.info("Updated sheet " + sheet_name)
             except Exception:
                 logging.exception("Exception occured:")
+
+        if self._archive:
+            logging.info("Updating archive")
+            try:
+                self._archive.update(self._ss_resource, self._to_be_archived)
+                self._to_be_archived = {}
+            except Exception:
+                logging.exception("Exception occured:")
+            logging.info("Archive updated")
 
     def reload_config(self, config):
         """Load new configurations.
@@ -127,9 +142,12 @@ class Spreadsheet:
                 if sheet_name in self._config.SHEETS:
                     sheet.reload_config(self._config.SHEETS[sheet_name])
 
+            if self._archive:
+                self._archive.reload_config(self._config.ARCHIVE_SHEET)
+
             self._last_config_update = config_update
 
-    def _init_sheets(self):
+    def _init_existing_sheets(self):
         """Init Sheet() object for every sheet in this spreadsheet.
 
         Returns:
@@ -141,6 +159,11 @@ class Spreadsheet:
         for sheet in resp["sheets"]:
             props = sheet["properties"]
             name = props["title"]
+
+            if name == self._config.ARCHIVE_SHEET.get("name"):
+                self._archive = ArchiveSheet(name, self._id, props["sheetId"])
+                continue
+
             sheets[name] = Sheet(name, self._id, props["sheetId"])
 
         return sheets
@@ -159,6 +182,10 @@ class Spreadsheet:
         for sheet in resp["sheets"]:
             props = sheet["properties"]
             name = props["title"]
+
+            if name == self._config.ARCHIVE_SHEET.get("name"):
+                self._archive.id = props["sheetId"]
+                continue
 
             self.sheets[name].id = props["sheetId"]
             sheets_in_ss.append(name)
@@ -189,6 +216,10 @@ class Spreadsheet:
                 self.sheets[name] = Sheet(name, self._id)
                 add_sheet_reqs.append(self.sheets[name].create_request)
 
+        if self._config.ARCHIVE_SHEET and self._archive.is_new:
+            add_sheet_reqs.append(self._archive.create_request)
+            self._archive.is_new = False
+
         return add_sheet_reqs
 
     def _build_delete_sheets_requests(self, sheets_in_conf):
@@ -207,6 +238,9 @@ class Spreadsheet:
         for name, sheet in self.sheets.items():
             if name not in sheets_in_conf:
                 del_sheet_reqs.append(sheet.delete_request)
+
+        if self._archive and not self._config.ARCHIVE_SHEET:
+            del_sheet_reqs.append(self._archive.delete_request)
 
         return del_sheet_reqs
 

@@ -1,4 +1,6 @@
-"""API which controls single Google Sheet."""
+"""API to control single Google Sheet."""
+import abc
+import datetime
 import string
 import github
 import fill_funcs
@@ -8,8 +10,8 @@ from instances import Columns, Row
 from utils import BatchIterator, get_url_from_formula
 
 
-class Sheet:
-    """Object related to a single sheet.
+class BaseSheet(metaclass=abc.ABCMeta):
+    """Single sheet base object.
 
     Args:
         name (str): Sheet name.
@@ -22,7 +24,16 @@ class Sheet:
         self.name = name
         self.ss_id = spreadsheet_id
         self._config = None
-        self._builder = sheet_builder.SheetBuilder(name)
+
+    @abc.abstractmethod
+    def update(self, ss_resource):
+        """Method to update sheet data."""
+        raise NotImplementedError("update() method should be implemented.")
+
+    @abc.abstractmethod
+    def _prepare_table(self, issues):
+        """Method to prepare data for insertion into sheet."""
+        raise NotImplementedError("_prepare_table() method should be implemented.")
 
     @property
     def create_request(self):
@@ -62,84 +73,45 @@ class Sheet:
             config (dict): Sheet configurations.
         """
         self._config = config
-        self._builder.reload_config(config)
 
-    def update(self, ss_resource):
-        """Update specified sheet with issues/PRs data."""
-        updated_issues = self._builder.retrieve_updated()
-        if not updated_issues:
-            return
-
-        tracked_issues = self._read(ss_resource)
-        self._merge_tables(tracked_issues, updated_issues)
-
-        self._insert_new_issues(tracked_issues, updated_issues)
-        new_table, requests = self._prepare_table(tracked_issues.values())
-
-        self._format(ss_resource)
-        self._insert(ss_resource, new_table, "A2")
-
-        self._clear_bottom(ss_resource, len(tracked_issues), len(self._columns.names))
-        self._post_requests(ss_resource, requests)
-        self._builder.first_update = False
-
-    def _merge_tables(self, tracked_issues, updated_issues):
-        """Merge new data into the table read from the sheet.
-
-        Args:
-            tracked_issues (dict): Issues loaded from the sheet.
-            updated_issues (dict): Recently update issues.
-        """
-        to_be_deleted = []
-
-        for id_ in tracked_issues.keys():
-            try:
-                issue_obj = self._spot_issue_object(id_, updated_issues)
-            except github.UnknownObjectException:
-                to_be_deleted.append(id_)
-                continue
-
-            prs = self._builder.get_related_prs(id_)
-            if issue_obj:
-                # update columns using fill function
-                for col in self._columns.names:
-                    self._columns.fill_funcs[col](
-                        tracked_issues[id_],
-                        issue_obj,
-                        self.name,
-                        self._config,
-                        prs,
-                        False,
-                    )
-
-                to_del = fill_funcs.to_be_deleted(tracked_issues[id_], issue_obj, prs)
-                if to_del:
-                    to_be_deleted.append(id_)
-
-        for id_ in to_be_deleted:
-            tracked_issues.pop(id_)
-            self._builder.delete_from_index(id_)
-
-    def _spot_issue_object(self, id_, updated_issues):
-        """Designate issue object.
-
-        Args:
-            id_ (str): Issue URL.
-            updated_issues (dict): Dict of issues updated after the last filling.
+    def _read(self, ss_resource):
+        """Read data from this sheet.
 
         Returns:
-            (github.Issue.Issue): Issue object.
+            dict: Issues index.
         """
-        # issue was update
-        if id_ in updated_issues.keys():
-            return updated_issues.pop(id_)
-        # issue closed, but it's the first update after start
-        elif self._builder.first_update:
-            return self._builder.read_issue(id_)
-        # issue wasn't updated, and it's not the first update
-        # after start - take issue object from index
-        else:
-            return self._builder.get_from_index(id_)
+        table = (
+            ss_resource.values()
+            .get(spreadsheetId=self.ss_id, range=self.name, valueRenderOption="FORMULA")
+            .execute()
+            .get("values")
+        )
+
+        if table is None:  # sheet is completely clear
+            self._format(ss_resource)
+            table = (
+                ss_resource.values()
+                .get(
+                    spreadsheetId=self.ss_id,
+                    range=self.name,
+                    valueRenderOption="FORMULA",
+                )
+                .execute()["values"]
+            )
+
+        self._columns = Columns(self._config["columns"], self.id)
+        return _build_index(table[1:], table[0])
+
+    def _format(self, ss_resource):
+        """Update sheet structure.
+
+        Create title row in the specified sheet, format columns
+        and add data validation according to config module.
+        """
+        self._columns = Columns(self._config["columns"], self.id)
+
+        self._insert(ss_resource, [self._columns.names], "A1")
+        self._post_requests(ss_resource, self._columns.requests)
 
     def _insert(self, ss_resource, rows, start_from):
         """Write new data into this sheet.
@@ -179,44 +151,122 @@ class Sheet:
                     spreadsheetId=self.ss_id, body={"requests": batch}
                 ).execute()
 
-    def _format(self, ss_resource):
-        """Update sheet structure.
 
-        Create title row in the specified sheet, format columns
-        and add data validation according to config module.
+class Sheet(BaseSheet):
+    """Object related to a single sheet.
+
+    Args:
+        name (str): Sheet name.
+        spreadsheet_id (str): Parent spreadsheet id.
+        id (int): Numeric sheet id.
+    """
+
+    def __init__(self, name, spreadsheet_id, id_=None):
+        super(Sheet, self).__init__(name, spreadsheet_id, id_)
+        self._builder = sheet_builder.SheetBuilder(name)
+
+    def reload_config(self, config):
+        """Reload sheet configurations.
+
+        Args:
+            config (dict): Sheet configurations.
         """
-        self._columns = Columns(self._config["columns"], self.id)
+        super(Sheet, self).reload_config(config)
+        self._builder.reload_config(config)
 
-        self._insert(ss_resource, [self._columns.names], "A1")
-        self._post_requests(ss_resource, self._columns.requests)
+    def update(self, ss_resource, to_be_archived):
+        """Update specified sheet with issues/PRs data.
 
-    def _read(self, ss_resource):
-        """Read data from this sheet.
+        Args:
+            to_be_archived (dict): Issues to be archived.
+        """
+        updated_issues = self._builder.retrieve_updated()
+        if not updated_issues:
+            return
+
+        tracked_issues = self._read(ss_resource)
+        to_be_archived.update(self._merge_tables(tracked_issues, updated_issues))
+
+        self._insert_new_issues(tracked_issues, updated_issues)
+        new_table, requests = self._prepare_table(tracked_issues.values())
+
+        self._format(ss_resource)
+        self._insert(ss_resource, new_table, "A2")
+
+        self._clear_bottom(ss_resource, len(tracked_issues), len(self._columns.names))
+        self._post_requests(ss_resource, requests)
+        self._builder.first_update = False
+
+    def _merge_tables(self, tracked_issues, updated_issues):
+        """Merge new data into the table read from the sheet.
+
+        Args:
+            tracked_issues (dict): Issues loaded from the sheet.
+            updated_issues (dict): Recently update issues.
 
         Returns:
-            dict: Issues index.
+            dict: Index of issues to be archived.
         """
-        table = (
-            ss_resource.values()
-            .get(spreadsheetId=self.ss_id, range=self.name, valueRenderOption="FORMULA")
-            .execute()
-            .get("values")
-        )
+        to_be_deleted = []
+        to_be_archived = {}
 
-        if table is None:  # sheet is completely clear
-            self._format(ss_resource)
-            table = (
-                ss_resource.values()
-                .get(
-                    spreadsheetId=self.ss_id,
-                    range=self.name,
-                    valueRenderOption="FORMULA",
+        for id_ in tracked_issues.keys():
+            try:
+                issue_obj = self._spot_issue_object(id_, updated_issues)
+            except github.UnknownObjectException:
+                to_be_deleted.append(id_)
+                continue
+
+            prs = self._builder.get_related_prs(id_)
+            if issue_obj:
+                # update columns using fill function
+                for col in self._columns.names:
+                    self._columns.fill_funcs[col](
+                        tracked_issues[id_],
+                        issue_obj,
+                        self.name,
+                        self._config,
+                        prs,
+                        False,
+                    )
+
+                to_del = fill_funcs.to_be_deleted(tracked_issues[id_], issue_obj, prs)
+                if to_del:
+                    to_be_deleted.append(id_)
+
+            if fill_funcs.to_be_archived(tracked_issues[id_]):
+                tracked_issues[id_]["Sheet"] = self.name
+                tracked_issues[id_]["Archived"] = datetime.datetime.now().strftime(
+                    "%d %b %Y"
                 )
-                .execute()["values"]
-            )
+                to_be_archived[id_] = tracked_issues[id_]
 
-        self._columns = Columns(self._config["columns"], self.id)
-        return _build_index(table[1:], table[0])
+        for id_ in to_be_deleted + list(to_be_archived.keys()):
+            tracked_issues.pop(id_)
+            self._builder.delete_from_index(id_)
+
+        return to_be_archived
+
+    def _spot_issue_object(self, id_, updated_issues):
+        """Designate issue object.
+
+        Args:
+            id_ (str): Issue URL.
+            updated_issues (dict): Dict of issues updated after the last filling.
+
+        Returns:
+            (github.Issue.Issue): Issue object.
+        """
+        # issue was update
+        if id_ in updated_issues.keys():
+            return updated_issues.pop(id_)
+        # issue closed, but it's the first update after start
+        elif self._builder.first_update:
+            return self._builder.read_issue(id_)
+        # issue wasn't updated, and it's not the first update
+        # after start - take issue object from index
+        else:
+            return self._builder.get_from_index(id_)
 
     def _clear_bottom(self, ss_resource, length, width):
         """Clear cells from the last actual row till the end.
@@ -248,7 +298,7 @@ class Sheet:
 
         # convert rows into lists
         for index, row in enumerate(new_table):
-            new_table[index] = row.as_list[: len(self._columns.names)]
+            new_table[index] = row.as_list()[: len(self._columns.names)]
 
             for col, color in row.colors.items():
                 requests.append(
@@ -280,6 +330,56 @@ class Sheet:
                     self._builder.get_related_prs(new_id),
                     True,
                 )
+
+
+class ArchiveSheet(BaseSheet):
+    """Sheet with archived issues.
+
+    Issues are getting into this sheet through
+    fill_funcs.to_be_archived() function. They are not
+    tracked, but if issue was reopened, became active
+    and then archived once again, the issue's row will
+    be updated in archive.
+    """
+
+    def __init__(self, name, spreadsheet_id, id_=None, is_new=False):
+        super(ArchiveSheet, self).__init__(name, spreadsheet_id, id_)
+        self.is_new = is_new
+
+    def update(self, ss_resource, to_be_archived):
+        """Update sheet with recently archived issues.
+
+        Args:
+            to_be_archived (dict): Issue rows to be archived.
+        """
+        archived_issues = self._read(ss_resource)
+        archived_issues.update(to_be_archived)
+
+        new_table = self._prepare_table(archived_issues.values())
+
+        self._format(ss_resource)
+        if new_table:
+            self._insert(ss_resource, new_table, "A2")
+
+    def _prepare_table(self, archived_issues):
+        """Prepare table for insertion into the archive sheet.
+
+        Every Row() will be translated into list() with
+        proper columns order.
+
+        Args:
+            archived_issues (list): Rows to be inserted into archive.
+
+        Returns:
+            list: Lists, each of which represents single row.
+        """
+        new_table = list(archived_issues)
+        new_table.sort(key=fill_funcs.archive_sort_func)
+
+        for index, row in enumerate(new_table):
+            new_table[index] = row.as_list(self._columns)
+
+        return new_table
 
 
 def _build_index(table, column_names):

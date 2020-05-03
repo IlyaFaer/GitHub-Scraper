@@ -105,5 +105,5 @@ class TestSheet(unittest.TestCase):
 
         with mock.patch.object(sheet._builder, "retrieve_updated", return_value={}):
             with mock.patch.object(sheet, "_read") as read_mock:
-                sheet.update(None)
+                sheet.update(None, [])
                 read_mock.assert_not_called()
