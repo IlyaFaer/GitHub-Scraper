@@ -1,11 +1,10 @@
-"""Tracker's main program example.
+"""Tracker main program example.
 
 Create your own main.py to use Scraper.
 Your main.py will not be Git-tracked.
 
-It creates Google spreadsheet and fills
-it with the specified repositories
-data at the specified intervals.
+Сreates Google spreadsheet and fills it with the
+specified repositories data at the specified intervals.
 """
 import time
 import config

@@ -210,7 +210,7 @@ class Sheet(BaseSheet):
         to_be_deleted = []
         to_be_archived = {}
 
-        for id_ in tracked_issues.keys():
+        for id_, issue in tracked_issues.items():
             try:
                 issue_obj = self._spot_issue_object(id_, updated_issues)
             except github.UnknownObjectException:
@@ -222,24 +222,17 @@ class Sheet(BaseSheet):
                 # update columns using fill function
                 for col in self._columns.names:
                     self._columns.fill_funcs[col](
-                        tracked_issues[id_],
-                        issue_obj,
-                        self.name,
-                        self._config,
-                        prs,
-                        False,
+                        issue, issue_obj, self.name, self._config, prs, False,
                     )
 
-                to_del = fill_funcs.to_be_deleted(tracked_issues[id_], issue_obj, prs)
+                to_del = fill_funcs.to_be_deleted(issue, issue_obj, prs)
                 if to_del:
                     to_be_deleted.append(id_)
 
-            if fill_funcs.to_be_archived(tracked_issues[id_]):
-                tracked_issues[id_]["Sheet"] = self.name
-                tracked_issues[id_]["Archived"] = datetime.datetime.now().strftime(
-                    "%d %b %Y"
-                )
-                to_be_archived[id_] = tracked_issues[id_]
+            if fill_funcs.to_be_archived(issue):
+                issue["Sheet"] = self.name
+                issue["Archived"] = datetime.datetime.now().strftime("%d %b %Y")
+                to_be_archived[id_] = issue
 
         for id_ in to_be_deleted + list(to_be_archived.keys()):
             tracked_issues.pop(id_)

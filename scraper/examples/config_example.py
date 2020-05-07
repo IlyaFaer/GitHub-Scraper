@@ -1,9 +1,9 @@
 """
-File describes spreadsheet's architecture, including
-columns style, data validation, tracked repositories, etc.
+Configurations example. Create and tweak your own config.py
+(see TODO). Your config.py will not be Git-tracked.
 
-This is a configurations example. Create and tweak your
-own config.py (see TODO). Your config.py will not be Git-tracked.
+File describes spreadsheet architecture, including
+columns style, data validation, tracked repositories, etc.
 """
 import copy
 import fill_funcs
@@ -24,6 +24,7 @@ PROJECTS_LABELS = {
 
 # TODO: set your spreadsheet title
 TITLE = "QLogic Issue Tracker"
+
 # TODO: set duration of a pause between updates
 UPDATE_PERIODICITY = 3600  # one hour
 
@@ -32,12 +33,11 @@ COLUMNS = [
     {
         "name": "Priority",  # column title
         "align": "CENTER",  # text alignment
-        "width": 80,
-        # function to set value of a
-        # single one cell in this column
+        "width": 80,  # column width
+        # function to fill a single cell in this column
         "fill_func": fill_funcs.fill_priority,
         # possible values with their colors
-        # column will become drop-down list
+        # makes column a drop-down list
         "values": {
             "Closed": {"red": 0.6, "green": 0.6, "blue": 0.6},  # grey
             "Low": {"red": 0.77, "green": 0.93, "blue": 0.82},  # green
@@ -128,7 +128,7 @@ JAVA_COLUMNS[7]["values"] = (
 SHEETS = {
     "Python": {  # sheet name
         "labels": PROJECTS_LABELS,  # meaningful labels
-        "repo_names": {  # repos to track on this sheet
+        "repo_names": {  # repositories to track on this sheet
             "googleapis/python-logging": "Logging",
             "googleapis/python-dataproc": "Dataproc",
             "googleapis/python-datastore": "Datastore",
@@ -280,7 +280,7 @@ SHEETS = {
 }
 
 
-# TODO: set archive sheet configrations
+# TODO: set archive sheet configurations
 # set to {} in case if no archive needed
 ARCHIVE_SHEET = {
     "name": "Archive",
