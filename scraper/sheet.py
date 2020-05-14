@@ -181,8 +181,6 @@ class Sheet(BaseSheet):
             to_be_archived (dict): Issues to be archived.
         """
         updated_issues = self._builder.retrieve_updated()
-        if not updated_issues:
-            return
 
         tracked_issues = self._read(ss_resource)
         to_be_archived.update(self._merge_tables(tracked_issues, updated_issues))

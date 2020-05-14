@@ -98,12 +98,3 @@ class TestSheet(unittest.TestCase):
         self.assertEqual(
             sheet._spot_issue_object("123", {"1253": "Issue"}), "index_issue"
         )
-
-    def test_update_no_updated_issues(self):
-        """Check if update was breaked in case of no updated issues."""
-        sheet = SheetMock("sheet1", SPREADSHEET_ID)
-
-        with mock.patch.object(sheet._builder, "retrieve_updated", return_value={}):
-            with mock.patch.object(sheet, "_read") as read_mock:
-                sheet.update(None, [])
-                read_mock.assert_not_called()
