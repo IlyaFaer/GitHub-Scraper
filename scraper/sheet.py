@@ -232,7 +232,7 @@ class Sheet(BaseSheet):
                 issue["Archived"] = datetime.datetime.now().strftime("%d %b %Y")
                 to_be_archived[id_] = issue
 
-        for id_ in to_be_deleted + list(to_be_archived.keys()):
+        for id_ in set(to_be_deleted + list(to_be_archived.keys())):
             tracked_issues.pop(id_)
             self._builder.delete_from_index(id_)
 
