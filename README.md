@@ -1,4 +1,4 @@
-# GitHub Scraper (beta)
+# GitHub Scraper (beta, development paused)
 
 GitHub Scraper automatically builds issues and PRs tables in Google Sheets documents, and periodically updates them.
 * **Multirepo**: track several repositories within one sheet and several sheets within one spreadsheet
